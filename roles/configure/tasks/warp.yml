@@ -1,0 +1,91 @@
+---
+- name: Install Cloudflare Warp for Access
+  tags: ["warp"]
+  block:
+    - name: Add Cloudflare's official GPG key
+      ansible.builtin.apt_key:
+        url: https://pkg.cloudflareclient.com/pubkey.gpg
+        keyring: /etc/apt/keyrings/cloudflare-warp-archive-keyring.gpg
+        state: present
+
+    - name: Add Cloudflare repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [signed-by=/etc/apt/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ jammy main
+        filename: cloudflare-client
+        state: present
+
+    - name: Install Warp
+      ansible.builtin.apt:
+        name:
+          - cloudflare-warp
+        state: present
+        update_cache: true
+
+    - name: Copy Warp config
+      ansible.builtin.template:
+        src: warp.xml.j2
+        dest: /var/lib/cloudflare-warp/mdm.xml
+        force: yes
+
+    - name: Copy the Cloudflare Warp service file to /lib/systemd/system
+      template:
+        src: warp-svc.service.j2
+        dest: /lib/systemd/system/warp-svc.service
+        mode: '0644'
+      register: warp_svc_service_result
+
+    - name: Copy the Cloudflare Warp check script
+      template:
+        src: check-warp-status.sh.j2
+        dest: /usr/local/bin/check-warp-status.sh
+        mode: '0755'
+
+    - name: Copy the Cloudflare Warp check service file
+      template:
+        src: warp-check.service.j2
+        dest: /lib/systemd/system/warp-check.service
+        mode: '0644'
+      register: warp_check_service_result
+
+    - name: Copy the Cloudflare Warp check timer file
+      template:
+        src: warp-check.timer.j2
+        dest: /lib/systemd/system/warp-check.timer
+        mode: '0644'
+      register: warp_check_timer_result
+
+    - name: Reload systemd daemon if service or timer files changed
+      command: systemctl daemon-reload
+      when: warp_svc_service_result.changed or warp_check_service_result.changed or warp_check_timer_result.changed
+
+    - name: Enable and start Warp
+      ansible.builtin.systemd:
+        name: warp-svc
+        enabled: true
+        state: started
+
+    - name: Enable and start Warp Check timer
+      ansible.builtin.systemd:
+        name: warp-check.timer
+        enabled: true
+        state: started
+
+    - name: Run warp-cli and register the output
+      command: warp-cli --accept-tos status
+      register: warp_cli_output
+      retries: 3 
+      
+    - name: Run warp-cli registration if needed
+      command: warp-cli --accept-tos registration new
+      when: warp_cli_output.stdout_lines[0] == "Registration Missing"
+
+    - name: Connect Warp
+      ansible.builtin.command: warp-cli --accept-tos connect
+      retries: 3
+      
+    - name: Add cron job to ping 1.1.1.4
+      ansible.builtin.cron:
+        name: "warp-keep-alive"
+        minute: "*/30"
+        job: "/bin/ping 1.1.1.4 -c 10"

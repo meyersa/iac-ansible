@@ -1,0 +1,10 @@
+.DS_Store
+
+# Local playbook
+test.yml
+
+# OVPN files
+*.ovpn*
+
+# Vault Pass 
+.vault_pass 

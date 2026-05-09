@@ -1,0 +1,85 @@
+---
+- name: Install Grafana Alloy for Monitoring
+  tags: ["alloy"]
+  vars: 
+    ALLOY_DIR: /etc/alloy
+  block:
+    - name: Set Alloy hostname 
+      set_fact: 
+        ALLOY_HOSTNAME: "{{ ansible_hostname }}"
+
+    - name: Create a directory for config if it does not exist
+      ansible.builtin.file:
+        path: "{{ ALLOY_DIR }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy Alloy config
+      ansible.builtin.template:
+        src: config.alloy.j2
+        dest: "{{ ALLOY_DIR }}/config.alloy"
+        force: yes
+
+    - name: Copy Blackbox config
+      ansible.builtin.copy:
+        src: blackbox.yml
+        dest: "{{ ALLOY_DIR }}/blackbox.yml"
+        force: yes
+
+    - name: Check if GeoLite2-City directory exists
+      ansible.builtin.stat:
+        path: "{{ ALLOY_DIR }}/GeoLite2-City.mmdb"
+      register: geoip_dir
+
+    - name: Download GeoLite2-City database if not extracted
+      ansible.builtin.get_url:
+        url: "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz"
+        dest: "/tmp/GeoLite2-City.tar.gz"
+        username: "{{ ALLOY_MAXMIND_ID }}"
+        password: "{{ ALLOY_MAXMIND_KEY }}"
+      when: not geoip_dir.stat.exists
+
+    - name: Extract GeoLite2-City database
+      ansible.builtin.unarchive:
+        src: "/tmp/GeoLite2-City.tar.gz"
+        dest: "{{ ALLOY_DIR }}"
+        remote_src: yes
+        extra_opts:
+          - --wildcards
+          - --strip-components=1
+        include:
+          - "*/GeoLite2-City.mmdb"
+      when: not geoip_dir.stat.exists
+
+    - name: Add Grafana's official GPG key
+      ansible.builtin.apt_key:
+        url: https://apt.grafana.com/gpg.key
+        keyring: /etc/apt/keyrings/grafana.gpg
+        state: present
+
+    - name: Add Grafana repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main
+        filename: grafana
+        state: present
+
+    - name: Install Alloy
+      ansible.builtin.apt:
+        name:
+          - alloy
+        state: present
+        update_cache: true
+
+    - name: Enable and start Alloy
+      ansible.builtin.systemd:
+        name: alloy
+        enabled: true
+        state: started
+
+    - name: Add alloy user to docker group if it exists
+      ansible.builtin.user:
+        name: alloy
+        groups: docker
+        append: yes
+      ignore_errors: True

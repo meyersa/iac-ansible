@@ -1,0 +1,7 @@
+[Unit]
+Description=Check WARP CLI status and restart if not connected
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/check-warp-status.sh

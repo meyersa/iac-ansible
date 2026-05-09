@@ -1,0 +1,31 @@
+---
+- name: Install Apt Packages
+  tags: ["apt"]
+  block:
+    - name: Install required system packages
+      ansible.builtin.apt:
+        pkg:
+          - python3
+          - python3-pip
+          - git
+          - dnsutils
+          - iputils-ping
+          - net-tools
+          - traceroute
+          - curl
+          - wget
+          - htop
+          - nano
+          - unzip
+          - nodejs
+          - npm
+          - apt-transport-https
+          - ca-certificates
+          - gnupg
+          - software-properties-common
+          - debian-archive-keyring
+          - cron
+          - tcpdump
+          - netcat-traditional
+        state: latest
+        update_cache: true

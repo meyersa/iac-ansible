@@ -1,0 +1,8 @@
+- Configure 
+- Deploy 
+- Upload repos 
+- Grafana provisioning 
+- Backups? 
+- ci for apps (build image, deploy image change)
+- dependabot on compose files (or renovate ?)
+Look thru notes for more lol 

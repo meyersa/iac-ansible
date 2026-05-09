@@ -1,0 +1,8 @@
+--- 
+- name: Maintain Hosts Playbook 
+  hosts: all 
+  become: true 
+  vars: 
+    reboot: false 
+  roles: 
+    - maintain

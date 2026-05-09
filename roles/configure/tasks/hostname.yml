@@ -1,0 +1,22 @@
+---
+- name: Set Hostname
+  tags: ["hostname"]
+  block:
+  - name: Set a hostname specifying strategy
+    ansible.builtin.hostname:
+      name: "{{ inventory_hostname }}"
+      use: systemd
+
+  - name: Ensure localhost entry is present
+    lineinfile:
+      path: /etc/hosts
+      regexp: '^127\.0\.0\.1\s+'
+      line: '127.0.0.1 localhost'
+      state: present
+
+  - name: Ensure inventory hostname is present for 127.0.0.1
+    lineinfile:
+      path: /etc/hosts
+      regexp: '^127\.0\.0\.1\s+.*\b{{ inventory_hostname }}\b'
+      line: '127.0.0.1 localhost {{ inventory_hostname }}'
+      state: present

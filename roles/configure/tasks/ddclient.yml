@@ -1,0 +1,75 @@
+---
+- name: Configure ddclient for DDNS hostname
+  tags: ["ddclient"]
+  block:
+    - name: Set ddclient hostname 
+      set_fact: 
+        DDCLIENT_HOSTNAME: "{{ ansible_hostname }}"
+        DDCLIENT_PUB_USE: "use=web, web=https://icanhazip.com/, web-skip='\\\\n\\\\n'"
+        # Need it to end up being three backslashes for it to grep the right IP
+        DDCLIENT_WARP_USE: "use=cmd, cmd=\"ip a | grep '100\\\\\\.' | awk '{print $2}' | cut -d/ -f1\""
+
+    - name: Install ddclient 
+      ansible.builtin.apt:
+        name:
+          - ddclient
+        state: present
+        update_cache: true
+
+    - name: Copy public ddclient config
+      ansible.builtin.template:
+        src: ddclient.conf.j2
+        dest: /etc/ddclient-pub.conf
+        force: yes
+      vars: 
+        DD_HOSTNAME: " {{ DDCLIENT_HOSTNAME }}"
+        DD_USE: "{{ DDCLIENT_PUB_USE }}"
+
+    - name: Copy warp ddclient config
+      ansible.builtin.template:
+        src: ddclient.conf.j2
+        dest: /etc/ddclient-warp.conf
+        force: yes
+      vars: 
+        DD_HOSTNAME: "warp.{{ DDCLIENT_HOSTNAME }}"
+        DD_USE: "{{ DDCLIENT_WARP_USE }}"
+
+    - name: Copy pub ddclient service 
+      ansible.builtin.template: 
+        src: ddclient.service.j2
+        dest: /etc/systemd/system/ddclient-pub.service
+      vars: 
+        dd_file: "/etc/ddclient-pub.conf"
+
+    - name: Copy warp ddclient service 
+      ansible.builtin.template: 
+        src: ddclient.service.j2
+        dest: /etc/systemd/system/ddclient-warp.service
+      vars: 
+        dd_file: "/etc/ddclient-warp.conf"
+
+    - name: Set permissions for ddclient-pub config file
+      ansible.builtin.file:
+        path: /etc/ddclient-pub.conf
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Set permissions for ddclient-warp config file
+      ansible.builtin.file:
+        path: /etc/ddclient-warp.conf
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Enable and start public ddclient
+      ansible.builtin.systemd:
+        name: ddclient-pub
+        enabled: true
+        state: restarted
+
+    - name: Enable and start warp ddclient
+      ansible.builtin.systemd:
+        name: ddclient-warp
+        enabled: true
+        state: restarted

@@ -1,0 +1,338 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  port = 12345
+}
+
+// Relabel Docker targets for Blackbox
+discovery.relabel "blackbox" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_alloy_blackbox"]
+    regex         = "^$"
+    action        = "drop"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_alloy_blackbox"]
+    regex         = "(.+)"
+    replacement   = "https://$1"
+    target_label  = "address"
+    action        = "replace"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_alloy_blackbox"]
+    regex         = "(.+)"
+    replacement   = "https://$1"
+    target_label  = "target_url"
+    action        = "replace"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "target_container"
+    action        = "replace"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "name"
+    action        = "replace"
+  }
+
+  rule {
+    replacement  = "http_2xx"
+    target_label = "module"
+    action       = "replace"
+  }
+}
+
+
+// Blackbox
+prometheus.exporter.blackbox "default" {
+  config_file  = "{{ ALLOY_DIR }}/blackbox.yml"
+
+  targets = discovery.relabel.blackbox.output
+}
+
+// Scrape Blackbox
+prometheus.scrape "blackbox" {
+  targets    = prometheus.exporter.blackbox.default.targets
+  forward_to = [prometheus.remote_write.prom.receiver]
+
+}
+
+// Relabel Docker targets for metrics scraping
+discovery.relabel "metrics" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_alloy_scrape"]
+    regex         = "^$"
+    action        = "drop"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_alloy_job"]
+    target_label  = "job"
+    action        = "replace"
+  }
+
+  rule {
+    source_labels = ["__address__", "__meta_docker_container_label_alloy_port"]
+    regex         = "([^:]+):\\d+;(\\d+)"
+    replacement   = "$1:$2"
+    target_label  = "__address__"
+    action        = "replace"
+  }
+}
+
+// Scrape Docker containers
+prometheus.scrape "docker_metrics" {
+  targets    = discovery.relabel.metrics.output
+  forward_to = [prometheus.remote_write.prom.receiver]
+}
+
+// Scrape Docker Engine
+prometheus.scrape "engine" {
+  targets    = [{"__address__" = "localhost:9323"}]
+  job_name   = "{{ ALLOY_HOSTNAME }}"
+  forward_to = [prometheus.remote_write.prom.receiver] 
+}
+
+// System Stats
+prometheus.exporter.unix "default" {}
+
+prometheus.scrape "unix" {
+  targets    = prometheus.exporter.unix.default.targets
+  forward_to = [prometheus.remote_write.prom.receiver]
+}
+
+// Agent States
+prometheus.exporter.self "default" {}
+
+prometheus.scrape "agent" {
+  targets     = prometheus.exporter.self.default.targets
+  job_name    = "{{ ALLOY_HOSTNAME }}"
+  forward_to  = [prometheus.remote_write.prom.receiver]
+}
+
+// Mongo Metrics
+{% if MONGO_SCRAPE|default(false) %}
+prometheus.exporter.mongodb "mongo" {
+  mongodb_uri = "mongodb://{{ MONGO_ROOT_USER }}:{{ MONGO_ROOT_PASS }}@localhost:27017"
+}
+
+discovery.relabel "mongo_targets" {
+  targets = prometheus.exporter.mongodb.mongo.targets
+}
+
+prometheus.scrape "mongo" {
+  targets    = discovery.relabel.mongo_targets.output
+  job_name   = "mongo"
+  forward_to = [prometheus.remote_write.prom.receiver]
+}
+{% endif %}
+
+// Remote Write
+prometheus.remote_write "prom" {
+  endpoint {
+    url = "{{ ALLOY_MIMIR_URL }}"
+
+    basic_auth {
+      username = "{{ ALLOY_MIMIR_USER }}"
+      password = "{{ ALLOY_MIMIR_PASS }}"
+    }
+  }
+}
+
+// System logs
+loki.source.journal "default" {
+  forward_to    = [loki.process.filter.receiver]
+  labels        = { job = "journalctl", instance = "{{ ALLOY_HOSTNAME }}" }
+  relabel_rules = loki.relabel.journal.rules
+}
+
+// Docker logs
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.process.filter.receiver]
+  labels     = { job = "docker", instance = "{{ ALLOY_HOSTNAME }}" }
+  relabel_rules = loki.relabel.docker.rules
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    action        = "replace"
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    action        = "replace"
+    source_labels = ["__journal_syslog_identifier"]
+    target_label  = "syslog_identifier"
+  }
+}
+
+loki.relabel "docker" {
+  forward_to = []
+
+  rule {
+    action        = "replace"
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container_name"
+  }
+}
+
+loki.process "filter" {
+  forward_to = [loki.process.metrics.receiver]
+
+  stage.metrics {
+    metric.counter {
+      name              = "log_lines_read"
+      match_all         = true
+      action            = "inc"
+      max_idle_duration = "24h"
+    }
+  }
+  stage.drop {
+    older_than          = "24h"
+    drop_counter_reason = "Too old"
+  }
+  stage.drop {
+    longer_than         = "5KB"
+    drop_counter_reason = "Too big"
+  }
+  stage.drop {
+    expression          = ".*GrafanaAgent|Uptime-Kuma.*"
+    drop_counter_reason = "Monitoring Host"
+  }
+  stage.drop {
+    expression          = ".*could not set up a wait request to the Docker client|could not acquire work|context canceled|negative structured metadata.*"
+    drop_counter_reason = "Spammy Log"
+  }
+  stage.drop {
+    expression          = ".*debug.*"
+    drop_counter_reason = "Debug"
+  }
+  stage.drop {
+    expression          = ".*Response received from loki.*"
+    drop_counter_reason = "Feedback loop"
+  }
+  stage.metrics {
+    metric.counter {
+      name              = "log_lines_processed"
+      match_all         = true
+      action            = "inc"
+      max_idle_duration = "24h"
+    }
+  }
+}
+
+loki.process "metrics" { 
+  forward_to  = [loki.write.endpoint.receiver]
+  
+  stage.match {
+    selector = "{unit=\"ssh.service\"}"
+
+    stage.regex { 
+      expression = "^Accepted(?P<ssh_accepted>.*?)$" 
+    }
+    stage.regex { 
+      expression = "^.*closed(?P<ssh_closed>.*?)$"
+    }
+    stage.regex { 
+      expression = "^.*error(?P<ssh_error>.*?)$"
+    }
+    stage.regex { 
+      expression = "^.*( user|Accepted publickey for) (?P<connecting_user>.*?) .*$"
+    }
+    stage.regex { 
+      expression = "^.* (?P<connecting_ip>[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}) .*$"
+    }
+    stage.geoip {
+      source  = "connecting_ip"
+      db      = "{{ ALLOY_DIR }}/GeoLite2-City.mmdb"
+      db_type = "city"
+    }
+    stage.labels {
+      values = {
+        connecting_user          = "", 
+        connecting_ip            = "", 
+        geoip_city_name          = "",
+        geoip_country_name       = "",
+        geoip_continent_name     = "",
+        geoip_continent_code     = "",
+        geoip_location_latitude  = "",
+        geoip_location_longitude = "",
+        geoip_postal_code        = "",
+        geoip_timezone           = "",
+        geoip_subdivision_name   = "",
+        geoip_subdivision_code   = "",
+      }
+	  }
+    stage.static_labels {
+      values = { 
+        maxmind = "true",
+      }
+    }
+    stage.metrics { 
+      metric.counter { 
+        name              = "ssh_total" 
+        match_all         = true 
+        action            = "inc" 
+        max_idle_duration = "24h"
+      }
+      metric.counter { 
+        name              = "ssh_success" 
+        source            = "ssh_accepted" 
+        action            = "inc" 
+        max_idle_duration = "24h"
+      }
+      metric.counter { 
+        name              = "ssh_closed" 
+        source            = "ssh_closed" 
+        action            = "inc" 
+        max_idle_duration = "24h" 
+      }
+      metric.counter { 
+        name              = "ssh_error" 
+        source            = "ssh_error" 
+        action            = "inc" 
+        max_idle_duration = "24h" 
+      }
+    }
+  }
+
+  stage.regex { 
+    expression = "^.*error(?P<error_total>.*?)$"
+  }
+  stage.metrics {
+    metric.counter { 
+      name              = "error_total" 
+      source            = "error_total"
+      action            = "inc" 
+      max_idle_duration = "24h"
+    }
+  }
+}
+
+loki.write "endpoint" {
+  endpoint {
+    url = "{{ ALLOY_LOKI_URL }}"
+  
+    basic_auth {
+      username = "{{ ALLOY_LOKI_USER }}"
+      password = "{{ ALLOY_LOKI_PASS }}"
+    }
+  }
+}

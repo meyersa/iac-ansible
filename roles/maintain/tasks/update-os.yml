@@ -1,0 +1,13 @@
+---
+- name: Update OS 
+  tags: ["update-os"]
+  block: 
+    - name: Update apt
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+        lock_timeout: 360
+        
+    - name: Upgrade apt
+      ansible.builtin.apt:
+        upgrade: dist

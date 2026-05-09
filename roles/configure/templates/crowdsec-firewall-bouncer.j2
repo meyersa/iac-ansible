@@ -1,0 +1,15 @@
+mode: iptables
+pid_dir: /var/run/
+update_frequency: 10s
+log_mode: stdout
+log_level: info
+log_max_size: 1000
+api_url: {{ CROWDSEC_API_URL }}
+api_key: {{ CROWDSEC_API_KEY }}
+deny_action: DROP
+deny_log: false
+supported_decisions_types:
+  - ban
+blacklists_ipv4: crowdsec-blacklists
+iptables_chains:
+  - INPUT

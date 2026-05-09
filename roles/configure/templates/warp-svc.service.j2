@@ -1,0 +1,22 @@
+[Unit]
+Description=Cloudflare Zero Trust Client Daemon
+After=pre-network.target
+Wants=network-online.target
+After=local-fs.target
+Wants=local-fs.target
+
+[Service]
+ExecStartPre=/bin/sleep 10
+Type=simple
+ExecStart=/bin/warp-svc
+ExecStartPost=/bin/ping 1.1.1.4 -c 20
+DynamicUser=no
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_NET_RAW
+StateDirectory=cloudflare-warp
+RuntimeDirectory=cloudflare-warp
+LogsDirectory=cloudflare-warp
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

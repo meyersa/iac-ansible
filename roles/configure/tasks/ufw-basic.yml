@@ -1,0 +1,20 @@
+---
+- name: Configure Basic UFW
+  tags: ["ufw-basic"]
+  block:
+    - name: Install UFW package
+      ansible.builtin.apt:
+        name:
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: UFW - Allow SSH connections
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Enable and deny by default
+      community.general.ufw:
+        state: enabled
+        default: deny

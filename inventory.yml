@@ -1,0 +1,12 @@
+all:
+  children:
+    application:
+      hosts:
+        prod:
+
+        dev:
+
+    misc:
+      hosts:
+        jellyfin:
+        compute:

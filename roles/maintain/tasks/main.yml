@@ -1,0 +1,12 @@
+---
+- name: Update host 
+  tags: ["update"]
+  block: 
+    - import_tasks: update-os.yml 
+
+- name: Clean host 
+  tags: ["clean"]
+  block: 
+    - import_tasks: clean-os.yml 
+    
+    - import_tasks: clean-docker.yml 

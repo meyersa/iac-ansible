@@ -1,0 +1,81 @@
+---
+- name: Install Docker
+  tags: ["docker"]
+  block:
+    - name: Add Docker's official GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
+
+    - name: Get DEB architecture
+      command: dpkg --print-architecture
+      register: deb_architecture
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ deb_architecture.stdout }}
+          signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+        filename: docker
+        state: present
+
+    - name: Install Docker and related packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+    
+    - name: Configure Docker Daemon
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "metrics-addr": "0.0.0.0:9323",
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            }
+          }
+
+    - name: Add Docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add ansible to Docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+    - name: Add alloy to Docker group
+      ansible.builtin.user:
+        name: "alloy"
+        groups: docker
+        append: true
+
+    - name: Add generic user to Docker group
+      ansible.builtin.user:
+        name: "{{ DEPLOY_USER }}"
+        groups: docker
+        append: true
+
+    - name: Enable and start containerd
+      ansible.builtin.systemd:
+        name: containerd.service
+        enabled: true
+        state: started
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker.service
+        enabled: true
+        state: started

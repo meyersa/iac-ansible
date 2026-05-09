@@ -1,0 +1,45 @@
+---
+- name: Install Crowdsec Bouncer
+  tags: ["crowdsec-bouncer"]
+  block:
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: /etc/crowdsec/bouncers
+        state: directory
+        mode: "0755"
+
+    - name: Configure Crowdsec
+      ansible.builtin.template:
+        src: crowdsec-firewall-bouncer.j2
+        dest: /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
+
+    - name: Add Crowdsec's official GPG key
+      ansible.builtin.apt_key:
+        url: https://packagecloud.io/crowdsec/crowdsec/gpgkey
+        keyring: /etc/apt/keyrings/crowdsec_crowdsec-archive-keyring.gpg
+        state: present
+
+    - name: Add Crowdsec binary repo
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/etc/apt/keyrings/crowdsec_crowdsec-archive-keyring.gpg] https://packagecloud.io/crowdsec/crowdsec/any/ any main
+        filename: crowdsec
+        state: present
+
+    - name: Add Crowdsec source repo
+      ansible.builtin.apt_repository:
+        repo: deb-src [signed-by=/etc/apt/keyrings/crowdsec_crowdsec-archive-keyring.gpg] https://packagecloud.io/crowdsec/crowdsec/any/ any main
+        filename: crowdsec
+        state: present
+
+    - name: Install Crowdsec and related packages
+      ansible.builtin.apt:
+        name:
+          - crowdsec-firewall-bouncer-iptables
+        state: present
+        update_cache: true
+
+    - name: Enable and start Crowdsec
+      ansible.builtin.systemd:
+        name: crowdsec-firewall-bouncer.service
+        enabled: true
+        state: started

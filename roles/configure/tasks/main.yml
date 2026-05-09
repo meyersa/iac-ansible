@@ -1,0 +1,39 @@
+- name: Configure host
+  tags: ["config"]
+  block:
+  # Create user account
+  - import_tasks: access.yml
+
+  # Install Packages
+  # - import_tasks: apt.yml
+
+  - name: Create directory for GPG keys
+    tags: ["keyring"]
+    ansible.builtin.file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: "0755"
+
+  # Set Hostname 
+  - import_tasks: hostname.yml
+
+  # Configure UFW
+  - import_tasks: ufw-basic.yml
+
+  # Install Crowdsec
+  - import_tasks: crowdsec-bouncer.yml
+
+  # Install Warp
+  - import_tasks: warp.yml
+
+  # DDNS
+  - import_tasks: ddclient.yml 
+
+  # Configure Monitoring
+  - import_tasks: grafana-alloy.yml 
+
+  # Disable Swap
+  - import_tasks: swap.yml
+
+  # Install Docker 
+  - import_tasks: docker.yml 
