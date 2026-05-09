@@ -51,10 +51,9 @@ Shared functions across the main components
 
 | Tag           | Directory     | Description                                               |
 |---------------|---------------|-----------------------------------------------------------|
-| `DB_DIR`      | `/var/lib`    | Databases and other non backed up items                   |
+| `STATIC_DIR`  | `/var/lib`    | Databases and other non backed up items                   |
 | `DATA_DIR`    | `/srv`        | Service and served data that is backed up                 |
-| `STATIC_DIR`  | `/etc`        | Configuration and provisioning files                      |
-| `COMPOSE_DIR` | `/compose`    | Docker compose files       
+| `CONFIG_DIR`  | `/etc`        | Compose resources, configuration and provisioning files   |
 
 ### Automation 
 

@@ -1,0 +1,54 @@
+---
+- name: Deploy host 
+  tags: ["deploy"]
+  vars: 
+    GIT_DIR: "/home/augus/iac-cd/"
+    COMPOSE_DIR: "{{ CONFIG_DIR }}/compose"
+  block: 
+  # Git clone repo if not exist 
+  # - name: Clone compose repo
+  #   git:
+  #     repo: git@github.com:org/compose-repo.git
+  #     dest: "{{ CD_DIR }}"
+  #     version: main
+    
+  # Git pull 
+  # save output to see if there is change 
+
+  # Temp copy for local
+  - name: Sync local dev folder into staging
+    synchronize:
+      src: /home/augus/iac-cd/
+      dest: /tmp/iac-cd
+      archive: yes
+      delete: yes
+    delegate_to: localhost
+    become: false
+
+  - name: Deploy working directory
+    synchronize:
+      src: /tmp/iac-cd/
+      dest: "{{ COMPOSE_DIR }}"
+      archive: yes
+      delete: yes
+    delegate_to: localhost
+    become: false
+
+  - name: Find env templates
+    find:
+      paths: "{{ COMPOSE_DIR }}"
+      patterns: "*.env.j2"
+      recurse: yes
+    register: j2_files
+
+  - name: Render env files
+    template:
+      src: "{{ item.path }}"
+      dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
+    loop: "{{ j2_files.files }}"
+
+  # Apply 
+
+  # Run Checkout 
+
+  # Roll back on rescue

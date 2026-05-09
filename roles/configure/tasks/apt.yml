@@ -27,5 +27,7 @@
           - cron
           - tcpdump
           - netcat-traditional
+          - ansible
+          - npm
         state: latest
         update_cache: true

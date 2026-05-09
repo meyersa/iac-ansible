@@ -5,8 +5,10 @@
   - import_tasks: access.yml
 
   # Install Packages
-  # - import_tasks: apt.yml
+  - import_tasks: apt.yml
 
+  - import_tasks: npm.yml 
+  
   - name: Create directory for GPG keys
     tags: ["keyring"]
     ansible.builtin.file:

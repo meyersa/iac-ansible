@@ -27,7 +27,7 @@
     - name: Ensure authorized_keys file exists
       file:
         path: "/home/{{ DEPLOY_USER }}/.ssh/authorized_keys"
-        state: touch
+        state: file
         owner: "{{ DEPLOY_USER }}"
         group: "{{ DEPLOY_USER }}"
         mode: "0600"
