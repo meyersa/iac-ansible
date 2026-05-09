@@ -33,6 +33,7 @@
       vars: 
         DD_HOSTNAME: "warp.{{ DDCLIENT_HOSTNAME }}"
         DD_USE: "{{ DDCLIENT_WARP_USE }}"
+      notify: restart ddclient warp
 
     - name: Copy pub ddclient service 
       ansible.builtin.template: 
@@ -40,6 +41,7 @@
         dest: /etc/systemd/system/ddclient-pub.service
       vars: 
         dd_file: "/etc/ddclient-pub.conf"
+      notify: restart ddclient pub
 
     - name: Copy warp ddclient service 
       ansible.builtin.template: 
@@ -47,6 +49,7 @@
         dest: /etc/systemd/system/ddclient-warp.service
       vars: 
         dd_file: "/etc/ddclient-warp.conf"
+      notify: restart ddclient warp
 
     - name: Set permissions for ddclient-pub config file
       ansible.builtin.file:
@@ -54,7 +57,8 @@
         owner: root
         group: root
         mode: '0600'
-
+      notify: restart ddclient pub
+      
     - name: Set permissions for ddclient-warp config file
       ansible.builtin.file:
         path: /etc/ddclient-warp.conf
@@ -66,10 +70,8 @@
       ansible.builtin.systemd:
         name: ddclient-pub
         enabled: true
-        state: restarted
 
     - name: Enable and start warp ddclient
       ansible.builtin.systemd:
         name: ddclient-warp
         enabled: true
-        state: restarted

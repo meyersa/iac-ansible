@@ -29,28 +29,28 @@
         force: yes
 
     - name: Copy the Cloudflare Warp service file to /lib/systemd/system
-      template:
-        src: warp-svc.service.j2
+      ansible.builtin.copy:
+        src: warp-svc.service
         dest: /lib/systemd/system/warp-svc.service
         mode: '0644'
       register: warp_svc_service_result
 
     - name: Copy the Cloudflare Warp check script
-      template:
-        src: check-warp-status.sh.j2
+      ansible.builtin.copy:
+        src: check-warp-status.sh
         dest: /usr/local/bin/check-warp-status.sh
         mode: '0755'
 
     - name: Copy the Cloudflare Warp check service file
-      template:
-        src: warp-check.service.j2
+      ansible.builtin.copy:
+        src: warp-check.service
         dest: /lib/systemd/system/warp-check.service
         mode: '0644'
       register: warp_check_service_result
 
     - name: Copy the Cloudflare Warp check timer file
-      template:
-        src: warp-check.timer.j2
+      ansible.builtin.copy:
+        src: warp-check.timer
         dest: /lib/systemd/system/warp-check.timer
         mode: '0644'
       register: warp_check_timer_result
@@ -75,7 +75,8 @@
       command: warp-cli --accept-tos status
       register: warp_cli_output
       retries: 3 
-      
+      changed_when: false
+
     - name: Run warp-cli registration if needed
       command: warp-cli --accept-tos registration new
       when: warp_cli_output.stdout_lines[0] == "Registration Missing"
@@ -83,7 +84,8 @@
     - name: Connect Warp
       ansible.builtin.command: warp-cli --accept-tos connect
       retries: 3
-      
+      changed_when: false
+    
     - name: Add cron job to ping 1.1.1.4
       ansible.builtin.cron:
         name: "warp-keep-alive"

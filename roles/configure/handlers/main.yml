@@ -1,0 +1,12 @@
+# Only restart ddclient on change
+- name: restart ddclient pub
+  ansible.builtin.systemd:
+    name: ddclient-pub
+    state: restarted
+    enabled: true
+
+- name: restart ddclient warp
+  ansible.builtin.systemd:
+    name: ddclient-warp
+    state: restarted
+    enabled: true
