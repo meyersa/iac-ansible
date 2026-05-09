@@ -2,9 +2,13 @@
 - name: Configure admin account and SSH Access
   tags: ["access"]
   block:
+    - name: Get DEPLOY_USER from BW
+      set_fact:
+        bw_DEPLOY_USER: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
+
     - name: Create an administrative user
       user:
-        name: "{{ DEPLOY_USER }}"
+        name: "{{ bw_DEPLOY_USER }}"
         shell: /bin/bash
         comment: "Administrative User"
         groups: sudo
@@ -12,41 +16,41 @@
         
     - name: Create .ssh directory
       file:
-        path: "/home/{{ DEPLOY_USER }}/.ssh"
+        path: "/home/{{ bw_DEPLOY_USER }}/.ssh"
         state: directory
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+        owner: "{{ bw_DEPLOY_USER }}"
+        group: "{{ bw_DEPLOY_USER }}"
         mode: "0700"
 
     - name: Fetch public keys from GitHub
       uri:
-        url: "https://api.github.com/users/{{ GITHUB_USER }}/keys"
+        url: "https://api.github.com/users/meyersa/keys"
         return_content: yes
       register: github_keys
 
     - name: Ensure authorized_keys file exists
       file:
-        path: "/home/{{ DEPLOY_USER }}/.ssh/authorized_keys"
-        state: file
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+        path: "/home/{{ bw_DEPLOY_USER }}/.ssh/authorized_keys"
+        state: touch
+        owner: "{{ bw_DEPLOY_USER }}"
+        group: "{{ bw_DEPLOY_USER }}"
         mode: "0600"
 
     - name: Add GitHub public keys to authorized_keys
       lineinfile:
-        path: "/home/{{ DEPLOY_USER }}/.ssh/authorized_keys"
+        path: "/home/{{ bw_DEPLOY_USER }}/.ssh/authorized_keys"
         line: "{{ item.key }}"
         create: yes
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+        owner: "{{ bw_DEPLOY_USER }}"
+        group: "{{ bw_DEPLOY_USER }}"
         mode: "0600"
         state: present
       loop: "{{ github_keys.json }}"
 
     - name: Ensure sudoers file for admin user
       copy:
-        dest: "/etc/sudoers.d/{{ DEPLOY_USER }}"
-        content: "{{ DEPLOY_USER }} ALL=(ALL) NOPASSWD:ALL"
+        dest: "/etc/sudoers.d/{{ bw_DEPLOY_USER }}"
+        content: "{{ bw_DEPLOY_USER }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
     - name: Ensure sudoers file for ansible user

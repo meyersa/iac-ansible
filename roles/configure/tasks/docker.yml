@@ -12,7 +12,7 @@
       command: dpkg --print-architecture
       register: deb_architecture
       changed_when: false
-      
+
     - name: Add Docker repository
       ansible.builtin.apt_repository:
         repo: >-
@@ -65,7 +65,7 @@
 
     - name: Add generic user to Docker group
       ansible.builtin.user:
-        name: "{{ DEPLOY_USER }}"
+        name: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
         groups: docker
         append: true
 

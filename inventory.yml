@@ -1,12 +1,61 @@
 all:
   children:
-    application:
-      hosts:
-        prod:
+    oci:
+      vars: 
+        # Ansible
+        ansible_user: ubuntu
+        ansible_python_interpreter: /usr/bin/python3
+        DEPLOY_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
 
+        # Storage
+        CONFIG_DIR: /etc 
+        STATIC_DIR: /var/lib
+        DATA_DIR: /srv
+
+        # Warp
+        WARP_ID: 9aa48548-9c86-4b9f-81f8-b445017c8f03
+        WARP_SECRET: a4b808cb-9d5c-4b1c-aca8-b445017cb676
+        
+        # Crowdsec
+        CROWDSEC_API_URL: 3179598a-edf4-4b4c-8025-b44501746123
+        CROWDSEC_API_KEY: d9675bee-c354-4045-a4ce-b44501746e95
+        CROWDSEC_BOUNCER_KEY: 420d9fc9-1970-4373-b2fa-b445017ed39f
+
+        # Maxmind 
+        ALLOY_MAXMIND_ID: 668730fa-077e-43ed-80db-b445017f5dee
+        ALLOY_MAXMIND_KEY: 7f1f9060-937a-4a4c-8da9-b445017f9a5c
+        ALLOY_MIMIR_PASS: a7399df0-d590-4131-bed7-b4460009efc8
+        ALLOY_LOKI_PASS: 4b82076d-1ab0-4ca5-b3c4-b446000a08c4
+        
+        # DDClient
+        TLS_EMAIL: c85450b1-b9c9-49ce-b936-b445017a5f88
+        DDCLIENT_ZONE: 7a2ec819-1fc1-4b24-984a-b445017d0991
+        DDCLIENT_EMAIL: b4075465-91ec-4cb6-9c5c-b445017d3792
+        DDCLIENT_CF_GLOBAL_TOKEN: e2d33c7d-a423-482f-ae64-b445017d5558
+        DDCLIENT_API_KEY: edbb9ea8-4041-4902-81b2-b445017d6e3f
+
+        MONGO_USER: 440d3b55-1419-412f-af8d-b445017bbc1e
+
+        MIMIR_USER: 69030f94-ee2e-40c7-bfd5-b445017ad2df
+        MIMIR_PASS: f73de652-ebfe-4b29-ae49-b446000aed01
+        LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
+        LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
+
+      hosts:
         dev:
+          # Reqs 
+          CLOUDFLARED_TOKEN: a2d5aafc-3b8c-4a79-8251-b4450164f80b
 
-    misc:
-      hosts:
-        jellyfin:
-        compute:
+          # Domains
+          FRONTEND_DOMAIN: 02953505-d628-4f67-bee8-b44501645699
+          BACKEND_DOMAIN: 8fa8caf5-49c3-47d1-95ef-b44501647935
+          
+          # Passwords
+          MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TL_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          CS_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          SE_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TR_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          GF_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TL_SERVER_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TR_API_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3

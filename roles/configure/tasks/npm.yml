@@ -1,8 +1,0 @@
----
-- name: Install Grafana Alloy for Monitoring
-  tags: ["npm"]
-  block:
-  - name: Install BW
-    community.general.npm:
-      name: "@bitwarden/cli"
-      global: true

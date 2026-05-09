@@ -7,7 +7,7 @@
   # Install Packages
   - import_tasks: apt.yml
 
-  - import_tasks: npm.yml 
+  - import_tasks: pip.yml 
   
   - name: Create directory for GPG keys
     tags: ["keyring"]

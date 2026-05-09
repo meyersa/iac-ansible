@@ -4,10 +4,6 @@
   vars: 
     ALLOY_DIR: /etc/alloy
   block:
-    - name: Set Alloy hostname 
-      set_fact: 
-        ALLOY_HOSTNAME: "{{ ansible_hostname }}"
-
     - name: Create a directory for config if it does not exist
       ansible.builtin.file:
         path: "{{ ALLOY_DIR }}"
@@ -35,8 +31,8 @@
       ansible.builtin.get_url:
         url: "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz"
         dest: "/tmp/GeoLite2-City.tar.gz"
-        username: "{{ ALLOY_MAXMIND_ID }}"
-        password: "{{ ALLOY_MAXMIND_KEY }}"
+        username: "{{ lookup('bitwarden.secrets.lookup', ALLOY_MAXMIND_ID) }}"
+        password: "{{ lookup('bitwarden.secrets.lookup', ALLOY_MAXMIND_KEY) }}"
       when: not geoip_dir.stat.exists
 
     - name: Extract GeoLite2-City database

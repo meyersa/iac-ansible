@@ -8,3 +8,8 @@
 Look thru notes for more lol 
 
 - delete orphan envs
+- pip install bitwarden-sdk
+- script to setup host for ansible-pull ? or maybe just ansible it
+
+- way to install the bw access tooken
+ansible-galaxy collection install bitwarden.secrets
