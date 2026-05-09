@@ -6,3 +6,5 @@
 - ci for apps (build image, deploy image change)
 - dependabot on compose files (or renovate ?)
 Look thru notes for more lol 
+
+- delete orphan envs
