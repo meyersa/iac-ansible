@@ -4,12 +4,11 @@
   vars: 
     CD_DIR: "{{ CONFIG_DIR }}/compose"
   block: 
-  # Git clone repo if not exist 
-  # - name: Clone compose repo
-  #   git:
-  #     repo: git@github.com:org/compose-repo.git
-  #     dest: "{{ CD_DIR }}"
-  #     version: main
+  - name: Clone IAC
+    ansible.builtin.git:
+      repo: https://github.com/meyersa/iac-cd.git
+      dest: "{{ CD_DIR }}"
+      version: main
     
   # Git pull 
   # save output to see if there is change 
@@ -17,8 +16,9 @@
   - name: Find env templates
     find:
       paths: "{{ CD_DIR }}"
-      patterns: "*.env.j2"
+      patterns: "*.j2"
       recurse: yes
+      hidden: true
     register: j2_files
 
   - name: Render env files

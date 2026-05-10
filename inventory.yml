@@ -20,6 +20,7 @@ all:
         CROWDSEC_API_URL: 3179598a-edf4-4b4c-8025-b44501746123
         CROWDSEC_API_KEY: d9675bee-c354-4045-a4ce-b44501746e95
         CROWDSEC_BOUNCER_KEY: 420d9fc9-1970-4373-b2fa-b445017ed39f
+        CROWDSEC_TOKEN: 15db87a1-06eb-43ea-9d97-b4460029ba05
 
         # Maxmind 
         ALLOY_MAXMIND_ID: 668730fa-077e-43ed-80db-b445017f5dee
@@ -41,10 +42,19 @@ all:
         LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
         LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
 
+        TL_OPENAI_KEY: ca3f0aae-5b53-485f-9243-b446002f5b38
+        TR_OPENAI_KEY: c6f9ba3b-b2fd-4bc7-97cf-b4460031524e
+
       hosts:
         dev:
           # Reqs 
           CLOUDFLARED_TOKEN: a2d5aafc-3b8c-4a79-8251-b4450164f80b
+
+          # Notifications 
+          INFO_WEBHOOK_ID: 88e5841b-8207-46bb-b2b3-b4450175b475
+          INFO_WEBHOOK_TOKEN: 2353440d-bb81-4857-b192-b44501758a13
+          ERROR_WEBHOOK_ID: 79420251-13c9-4751-8eab-b4450176f954
+          ERROR_WEBHOOK_TOKEN: 911ef400-61ed-491e-9daf-b44501770bad
 
           # Domains
           FRONTEND_DOMAIN: 02953505-d628-4f67-bee8-b44501645699
@@ -52,10 +62,6 @@ all:
           
           # Passwords
           MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
-          TL_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
-          CS_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
-          SE_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
-          TR_MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           GF_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TL_SERVER_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TR_API_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
