@@ -81,3 +81,17 @@ sudo apt install software-properties-common
 sudo add-apt-repository --yes --update ppa:ansible/ansible
 sudo apt install ansible
 ```
+
+### Compose Commands 
+
+#### Start a single service 
+
+```bash
+docker compose -f compose.monitoring.yml up grafana
+```
+
+#### Take down a service and it's data volume 
+
+```bash
+docker compose -f compose.monitoring.yml down grafana -v
+```

@@ -1,15 +1,20 @@
-- Configure 
-- Deploy 
-- Upload repos 
-- Grafana provisioning 
-- Backups? 
-- ci for apps (build image, deploy image change)
-- dependabot on compose files (or renovate ?)
-Look thru notes for more lol 
-
-- delete orphan envs
-- pip install bitwarden-sdk
-- script to setup host for ansible-pull ? or maybe just ansible it
-
-- way to install the bw access tooken
-ansible-galaxy collection install bitwarden.secrets
+- playbooks 
+  - playbooks for cron ansible-pull 
+  - playbook for init 
+- maintain 
+  - backups 
+- deploy 
+  - crowdsec
+  - grafana provisioning
+  - delete orphans 
+  - finish setting up roles 
+  - loki / mimir built in auth? 
+- init role 
+  - add BW secret key from input on playbook 
+  - add cron jobs for ansible pull 
+- cd
+  - setup renovate for cd repo
+- ci 
+  - create shared pipeline for deployments 
+  - get apps up to date
+- look through notes for more

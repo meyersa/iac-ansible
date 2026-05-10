@@ -124,7 +124,7 @@ prometheus.scrape "agent" {
 }
 
 // Mongo Metrics
-{% if MONGO_SCRAPE|default(false) %}
+{% if MONGO_USER %}
 prometheus.exporter.mongodb "mongo" {
   mongodb_uri = "mongodb://{{ lookup('bitwarden.secrets.lookup', MONGO_USER) }}:{{ lookup('bitwarden.secrets.lookup', MONGO_PASS) }}@localhost:27017"
 }
@@ -147,7 +147,7 @@ prometheus.remote_write "prom" {
 
     basic_auth {
       username = "{{ lookup('bitwarden.secrets.lookup', MIMIR_USER) }}"
-      password = "{{ lookup('bitwarden.secrets.lookup', ALLOY_MIMIR_PASS) }}"
+      password = "{{ lookup('bitwarden.secrets.lookup', MIMIR_PASS) }}"
     }
   }
 }
@@ -332,7 +332,7 @@ loki.write "endpoint" {
   
     basic_auth {
       username = "{{ lookup('bitwarden.secrets.lookup', LOKI_USER) }}"
-      password = "{{ lookup('bitwarden.secrets.lookup', ALLOY_LOKI_PASS) }}"
+      password = "{{ lookup('bitwarden.secrets.lookup', LOKI_PASS) }}"
     }
   }
 }

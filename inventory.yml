@@ -25,8 +25,6 @@ all:
         # Maxmind 
         ALLOY_MAXMIND_ID: 668730fa-077e-43ed-80db-b445017f5dee
         ALLOY_MAXMIND_KEY: 7f1f9060-937a-4a4c-8da9-b445017f9a5c
-        ALLOY_MIMIR_PASS: a7399df0-d590-4131-bed7-b4460009efc8
-        ALLOY_LOKI_PASS: 4b82076d-1ab0-4ca5-b3c4-b446000a08c4
         
         # DDClient
         TLS_EMAIL: c85450b1-b9c9-49ce-b936-b445017a5f88
@@ -35,15 +33,20 @@ all:
         DDCLIENT_CF_GLOBAL_TOKEN: e2d33c7d-a423-482f-ae64-b445017d5558
         DDCLIENT_API_KEY: edbb9ea8-4041-4902-81b2-b445017d6e3f
 
-        MONGO_USER: 440d3b55-1419-412f-af8d-b445017bbc1e
 
-        MIMIR_USER: 69030f94-ee2e-40c7-bfd5-b445017ad2df
+        # Alloy
         MIMIR_PASS: f73de652-ebfe-4b29-ae49-b446000aed01
-        LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
         LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
 
+        # App Setup
         TL_OPENAI_KEY: ca3f0aae-5b53-485f-9243-b446002f5b38
         TR_OPENAI_KEY: c6f9ba3b-b2fd-4bc7-97cf-b4460031524e
+
+        # Usernames
+        GF_USER: 43dc6e1e-9187-4972-a123-b446002aa21d
+        MONGO_USER: 440d3b55-1419-412f-af8d-b445017bbc1e
+        MIMIR_USER: 69030f94-ee2e-40c7-bfd5-b445017ad2df
+        LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
 
       hosts:
         dev:
@@ -65,3 +68,5 @@ all:
           GF_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TL_SERVER_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TR_API_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+
+          GRAFANA_EDITABLE: true

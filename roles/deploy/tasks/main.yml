@@ -9,7 +9,8 @@
       repo: https://github.com/meyersa/iac-cd.git
       dest: "{{ CD_DIR }}"
       version: main
-    
+      force: true 
+      
   # Git pull 
   # save output to see if there is change 
 
