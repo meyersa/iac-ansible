@@ -3,17 +3,15 @@
   - playbook for init 
 - maintain 
   - backups 
-- deploy 
-  - crowdsec
-  - grafana provisioning
-  - delete orphans 
-  - finish setting up roles 
-  - loki / mimir built in auth? 
 - init role 
   - add BW secret key from input on playbook 
   - add cron jobs for ansible pull 
 - cd
-  - setup renovate for cd repo
+  - add health checks 
+  - add profiles/more label
+  - setup renovate for cd repo + static tagging
+  - dev watches dev branch which renovate targets for pr changes and then based on build status auto merge?
+  - media
 - ci 
   - create shared pipeline for deployments 
   - get apps up to date

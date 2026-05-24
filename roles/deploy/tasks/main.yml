@@ -1,35 +1,83 @@
 ---
-- name: Deploy host 
+- name: Deploy host
   tags: ["deploy"]
-  vars: 
+  vars:
     CD_DIR: "{{ CONFIG_DIR }}/compose"
-  block: 
-  - name: Clone IAC
-    ansible.builtin.git:
-      repo: https://github.com/meyersa/iac-cd.git
-      dest: "{{ CD_DIR }}"
-      version: main
-      force: true 
-      
-  # Git pull 
-  # save output to see if there is change 
+  block:
+    - name: Clone IAC
+      ansible.builtin.git:
+        repo: https://github.com/meyersa/iac-cd.git
+        dest: "{{ CD_DIR }}"
+        version: main
+        force: true
+      register: git_checkout
 
-  - name: Find env templates
-    find:
-      paths: "{{ CD_DIR }}"
-      patterns: "*.j2"
-      recurse: yes
-      hidden: true
-    register: j2_files
+    - name: Get changed files from git
+      ansible.builtin.command:
+        cmd: git diff --name-only HEAD@{1} HEAD
+        chdir: "{{ CD_DIR }}"
+      register: git_changed_files
+      changed_when: false
+      when: git_checkout.changed
 
-  - name: Render env files
-    template:
-      src: "{{ item.path }}"
-      dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
-    loop: "{{ j2_files.files }}"
+    - name: Find templates
+      ansible.builtin.find:
+        paths: "{{ CD_DIR }}"
+        patterns: "*.j2"
+        recurse: true
+        hidden: true
+      register: j2_files
 
-  # Apply 
+    - name: Render templates
+      ansible.builtin.template:
+        src: "{{ item.path }}"
+        dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
+      loop: "{{ j2_files.files }}"
+      register: rendered_templates
 
-  # Run Checkout 
+    - name: Build changed project list from rendered templates
+      ansible.builtin.set_fact:
+        template_projects: >-
+          {{
+            rendered_templates.results
+            | selectattr('changed')
+            | map(attribute='item.path')
+            | map('regex_replace', '^.*/compose/([^/]+)/.*$', '\1')
+            | list
+            | unique
+          }}
 
-  # Roll back on rescue
+    - name: Build changed project list from git diff
+      ansible.builtin.set_fact:
+        git_projects: >-
+          {{
+            (
+              git_changed_files.stdout_lines | default([])
+            )
+            | select('match', '^[^/]+/')
+            | map('regex_replace', '^([^/]+)/.*$', '\1')
+            | reject('match', '^\\.git$')
+            | list
+            | unique
+          }}
+
+    - name: Merge changed projects
+      ansible.builtin.set_fact:
+        changed_projects: >-
+          {{
+            (template_projects | default([]))
+            +
+            (git_projects | default([]))
+            | unique
+          }}
+
+    - name: Compose up changed projects
+      ansible.builtin.command:
+        cmd: >-
+          docker compose
+          -f {{ CD_DIR }}/compose.{{ item }}.yml
+          up -d --remove-orphans
+        chdir: "{{ CD_DIR }}"
+      loop: "{{ changed_projects }}"
+      when:
+        - changed_projects | length > 0
