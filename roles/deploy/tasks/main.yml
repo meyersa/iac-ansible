@@ -12,14 +12,6 @@
         force: true
       register: git_checkout
 
-    - name: Get changed files from git
-      ansible.builtin.command:
-        cmd: git diff --name-only HEAD@{1} HEAD
-        chdir: "{{ CD_DIR }}"
-      register: git_changed_files
-      changed_when: false
-      when: git_checkout.changed
-
     - name: Find templates
       ansible.builtin.find:
         paths: "{{ CD_DIR }}"
@@ -32,52 +24,83 @@
       ansible.builtin.template:
         src: "{{ item.path }}"
         dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
+        force: true
       loop: "{{ j2_files.files }}"
       register: rendered_templates
 
-    - name: Build changed project list from rendered templates
+    - name: Find compose projects
+      ansible.builtin.find:
+        paths: "{{ CD_DIR }}"
+        file_type: directory
+        depth: 1
+      register: project_dirs
+
+    - name: Build project list
       ansible.builtin.set_fact:
-        template_projects: >-
+        projects: >-
           {{
-            rendered_templates.results
-            | selectattr('changed')
-            | map(attribute='item.path')
-            | map('regex_replace', '^.*/compose/([^/]+)/.*$', '\1')
+            project_dirs.files
+            | map(attribute='path')
+            | map('basename')
+            | reject('search', '^\\.')
             | list
-            | unique
           }}
 
-    - name: Build changed project list from git diff
-      ansible.builtin.set_fact:
-        git_projects: >-
-          {{
-            (
-              git_changed_files.stdout_lines | default([])
-            )
-            | select('match', '^[^/]+/')
-            | map('regex_replace', '^([^/]+)/.*$', '\1')
-            | reject('match', '^\\.git$')
-            | list
-            | unique
-          }}
-
-    - name: Merge changed projects
-      ansible.builtin.set_fact:
-        changed_projects: >-
-          {{
-            (template_projects | default([]))
-            +
-            (git_projects | default([]))
-            | unique
-          }}
-
-    - name: Compose up changed projects
+    - name: Get changed files
       ansible.builtin.command:
-        cmd: >-
+        cmd: git diff --name-only ORIG_HEAD HEAD
+        chdir: "{{ CD_DIR }}"
+      register: git_changed_files
+      changed_when: false
+      when: git_checkout.changed
+
+    - name: Map changed services
+      ansible.builtin.set_fact:
+        changed_services: >-
+          {%- set out = [] -%}
+          {%- for f in (git_changed_files.stdout_lines | default([])) -%}
+            {%- for p in projects -%}
+              {%- if f.startswith(p ~ '/') -%}
+                {%- set rest = f.split('/', 2)[1:] | join('/') -%}
+
+                {# service folder change #}
+                {%- if '/' in rest -%}
+                  {%- set svc = rest.split('/')[0] -%}
+                  {%- set _ = out.append(p ~ ':' ~ svc) -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ out | unique }}
+
+    - name: Baseline compose up (all projects)
+      ansible.builtin.command:
+        cmd: >
           docker compose
           -f {{ CD_DIR }}/compose.{{ item }}.yml
           up -d --remove-orphans
-        chdir: "{{ CD_DIR }}"
-      loop: "{{ changed_projects }}"
+      loop: "{{ projects }}"
+      register: baseline_up
+
+    - name: Collect recreated services from baseline
+      ansible.builtin.set_fact:
+        baseline_recreated: >-
+          {{
+            baseline_up.results
+            | map(attribute='stdout')
+            | join(' ')
+            | regex_findall('Recreating ([^ ]+)')
+            | list
+            | unique
+          }}
+
+    - name: Force recreate impacted services (excluding baseline ones)
+      ansible.builtin.command:
+        cmd: >
+          docker compose
+          -f {{ CD_DIR }}/compose.{{ item.split(':')[0] }}.yml
+          up -d --force-recreate {{ item.split(':')[1] }}
+      loop: "{{ changed_services }}"
       when:
-        - changed_projects | length > 0
+        - changed_services | length > 0
+        - item.split(':')[1] not in baseline_recreated

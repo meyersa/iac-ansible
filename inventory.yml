@@ -33,11 +33,6 @@ all:
         DDCLIENT_CF_GLOBAL_TOKEN: e2d33c7d-a423-482f-ae64-b445017d5558
         DDCLIENT_API_KEY: edbb9ea8-4041-4902-81b2-b445017d6e3f
 
-
-        # Alloy
-        MIMIR_PASS: f73de652-ebfe-4b29-ae49-b446000aed01
-        LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
-
         # App Setup
         TL_OPENAI_KEY: ca3f0aae-5b53-485f-9243-b446002f5b38
         TR_OPENAI_KEY: c6f9ba3b-b2fd-4bc7-97cf-b4460031524e
@@ -68,5 +63,11 @@ all:
           GF_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TL_SERVER_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
           TR_API_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+
+          # Alloy
+          MIMIR_PASS: f73de652-ebfe-4b29-ae49-b446000aed01
+          MIMIR_BCRYPT_PASS: f60464a4-2653-462b-bc79-b45a00358b2f
+          LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
+          LOKI_BCRYPT_PASS: 4c83f2a6-8a8e-4708-b3e6-b45a0035a0cb
 
           GRAFANA_EDITABLE: true
