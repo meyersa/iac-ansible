@@ -1,0 +1,19 @@
+---
+- name: Post info webhook
+  ansible.builtin.uri:
+    url: "https://discord.com/api/webhooks/{{ lookup('bitwarden.secrets.lookup', INFO_WEBHOOK_ID) }}/{{ lookup('bitwarden.secrets.lookup', INFO_WEBHOOK_TOKEN) }}"
+    method: POST
+    body_format: json
+    status_code: 204
+    body:
+      username: Ansible
+      embeds:
+        - title: "{{ webhook_title | default('Ansible info') }}"
+          description: "{{ webhook_description | default('') }}"
+          color: "{{ webhook_color | default(3447003) }}"
+          fields: "{{ webhook_fields | default([]) }}"
+  delegate_to: localhost
+  become: false
+  no_log: true
+  failed_when: false
+
