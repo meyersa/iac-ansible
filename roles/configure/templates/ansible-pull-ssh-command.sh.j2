@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+unit_input="{{ deploy_pull_default_branch }}:{{ deploy_pull_default_playbook }}"
+
+if [[ -n "${SSH_ORIGINAL_COMMAND:-}" ]]; then
+  read -r command requested_input extra <<<"$SSH_ORIGINAL_COMMAND"
+
+  if [[ "$command" != "ansible-pull" ]] || [[ -n "${extra:-}" ]]; then
+    echo "Only 'ansible-pull [branch:playbook]' is allowed." >&2
+    exit 126
+  fi
+
+  if [[ -n "${requested_input:-}" ]]; then
+    unit_input="$requested_input"
+  fi
+fi
+
+if [[ ! "$unit_input" =~ ^[A-Za-z0-9._/-]+:[A-Za-z0-9._/-]+$ ]] || [[ "$unit_input" == *..* ]] || [[ "$unit_input" == */.* ]]; then
+  echo "Invalid ansible-pull input: $unit_input" >&2
+  exit 2
+fi
+
+unit="$(systemd-escape --template=ansible-pull@.service "$unit_input")"
+systemctl start "$unit"

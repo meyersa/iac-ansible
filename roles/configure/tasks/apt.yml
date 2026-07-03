@@ -31,3 +31,4 @@
           - npm
         state: latest
         update_cache: true
+        lock_timeout: 300

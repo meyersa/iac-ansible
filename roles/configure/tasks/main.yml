@@ -1,7 +1,10 @@
 - name: Configure host
   tags: ["config"]
   block:
-  # Create user account
+  # Create local accounts
+  - import_tasks: accounts.yml
+
+  # Configure SSH access
   - import_tasks: access.yml
 
   # Install Packages
@@ -39,3 +42,6 @@
 
   # Install Docker 
   - import_tasks: docker.yml 
+
+  # Configure ansible-pull deployments
+  - import_tasks: ansible-pull.yml

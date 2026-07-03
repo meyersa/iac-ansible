@@ -37,6 +37,7 @@
           - crowdsec-firewall-bouncer-iptables
         state: present
         update_cache: true
+        lock_timeout: 300
 
     - name: Enable and start Crowdsec
       ansible.builtin.systemd:

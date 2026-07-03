@@ -21,6 +21,7 @@
           - cloudflare-warp
         state: present
         update_cache: true
+        lock_timeout: 300
 
     - name: Copy Warp config
       ansible.builtin.template:

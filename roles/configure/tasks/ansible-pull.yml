@@ -1,0 +1,116 @@
+---
+- name: Configure ansible-pull runner resources
+  tags: ["config", "ansible-pull"]
+  block:
+    - name: Create ansible-pull directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: /var/lib/ansible-pull
+          owner: root
+          group: root
+          mode: "0755"
+        - path: "/home/{{ deploy_pull_actions_user }}/.ssh"
+          owner: "{{ deploy_pull_actions_user }}"
+          group: "{{ deploy_pull_actions_user }}"
+          mode: "0700"
+        - path: /etc/polkit-1/rules.d
+          owner: root
+          group: root
+          mode: "0755"
+
+    - name: Secure ansible-pull secrets file
+      ansible.builtin.file:
+        path: "{{ deploy_pull_secrets_file }}"
+        state: file
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Install ansible-pull wrapper
+      ansible.builtin.template:
+        src: ansible-pull-run.sh.j2
+        dest: /usr/local/bin/ansible-pull-run
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install restricted SSH command wrapper
+      ansible.builtin.template:
+        src: ansible-pull-ssh-command.sh.j2
+        dest: /usr/local/bin/ansible-pull-ssh-command
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Allow actions user SSH key to trigger only ansible-pull jobs
+      ansible.builtin.copy:
+        dest: "/home/{{ deploy_pull_actions_user }}/.ssh/authorized_keys"
+        content: >
+          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty
+          {{ lookup('ansible.builtin.file', playbook_dir ~ '/../ansible.pub') }}
+        owner: "{{ deploy_pull_actions_user }}"
+        group: "{{ deploy_pull_actions_user }}"
+        mode: "0600"
+
+    - name: Install ansible-pull systemd service
+      ansible.builtin.template:
+        src: ansible-pull@.service.j2
+        dest: /etc/systemd/system/ansible-pull@.service
+        owner: root
+        group: root
+        mode: "0644"
+      register: deploy_pull_service
+
+    - name: Install ansible-pull systemd timer
+      ansible.builtin.template:
+        src: ansible-pull@.timer.j2
+        dest: /etc/systemd/system/ansible-pull@.timer
+        owner: root
+        group: root
+        mode: "0644"
+      register: deploy_pull_timer
+
+    - name: Stop legacy ansible-pull timer
+      ansible.builtin.systemd_service:
+        name: deploy-self.timer
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Stop legacy named ansible-pull timer
+      ansible.builtin.systemd_service:
+        name: deploy-self@deploy.timer
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Stop legacy default ansible-pull timer
+      ansible.builtin.systemd_service:
+        name: "deploy-self@{{ deploy_pull_default_branch }}:{{ deploy_pull_default_playbook }}.timer"
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    - name: Allow non-root users to start ansible-pull services
+      ansible.builtin.template:
+        src: 50-ansible-pull.rules.j2
+        dest: /etc/polkit-1/rules.d/50-ansible-pull.rules
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd units
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      when: deploy_pull_service.changed or deploy_pull_timer.changed or deploy_pull_legacy_timer.changed or deploy_pull_legacy_named_timer.changed or deploy_pull_legacy_service.changed or deploy_pull_legacy_timer_template.changed
+
+    - name: Enable default ansible-pull timer
+      ansible.builtin.systemd_service:
+        name: "ansible-pull@{{ deploy_pull_default_branch }}:{{ deploy_pull_default_playbook }}.timer"
+        enabled: "{{ deploy_pull_default_timer_enabled }}"
+        state: "{{ deploy_pull_default_timer_enabled | ternary('started', 'stopped') }}"

@@ -2,18 +2,6 @@
 - name: Configure admin account and SSH Access
   tags: ["access"]
   block:
-    - name: Get DEPLOY_USER from BW
-      set_fact:
-        bw_DEPLOY_USER: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
-
-    - name: Create an administrative user
-      user:
-        name: "{{ bw_DEPLOY_USER }}"
-        shell: /bin/bash
-        comment: "Administrative User"
-        groups: sudo
-        append: yes 
-        
     - name: Create .ssh directory
       file:
         path: "/home/{{ bw_DEPLOY_USER }}/.ssh"

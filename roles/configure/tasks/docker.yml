@@ -32,6 +32,7 @@
           - docker-compose-plugin
         state: present
         update_cache: true
+        lock_timeout: 300
     
     - name: Configure Docker Daemon
       ansible.builtin.copy:
@@ -65,7 +66,7 @@
 
     - name: Add generic user to Docker group
       ansible.builtin.user:
-        name: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
+        name: "{{ bw_DEPLOY_USER }}"
         groups: docker
         append: true
 

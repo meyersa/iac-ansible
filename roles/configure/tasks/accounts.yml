@@ -1,0 +1,31 @@
+---
+- name: Configure local accounts
+  tags: ["accounts", "access", "alloy", "ansible-pull"]
+  block:
+    - name: Get login user from BW
+      ansible.builtin.set_fact:
+        bw_DEPLOY_USER: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
+
+    - name: Create login user
+      ansible.builtin.user:
+        name: "{{ bw_DEPLOY_USER }}"
+        shell: /bin/bash
+        comment: "Login User"
+        groups: sudo
+        append: true
+
+    - name: Create Alloy service account
+      ansible.builtin.user:
+        name: alloy
+        shell: /usr/sbin/nologin
+        comment: "Grafana Alloy Service Account"
+        system: true
+        create_home: false
+
+    - name: Create actions service account
+      ansible.builtin.user:
+        name: "{{ deploy_pull_actions_user }}"
+        shell: /bin/bash
+        comment: "Actions Service Account"
+        create_home: true
+        password_lock: true
