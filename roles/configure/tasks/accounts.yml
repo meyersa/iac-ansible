@@ -24,7 +24,7 @@
 
     - name: Create actions service account
       ansible.builtin.user:
-        name: "{{ deploy_pull_actions_user }}"
+        name: "{{ ansible_pull_actions_user }}"
         shell: /bin/bash
         comment: "Actions Service Account"
         create_home: true

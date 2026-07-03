@@ -6,7 +6,7 @@ usage() {
 }
 
 input="${1:-}"
-skip_unchanged="{{ deploy_pull_skip_unchanged | ternary('true', 'false') }}"
+skip_unchanged="{{ ansible_pull_skip_unchanged | ternary('true', 'false') }}"
 
 if [[ -z "$input" ]] || [[ $# -gt 2 ]]; then
   usage
@@ -49,8 +49,8 @@ if [[ "$skip_unchanged" != "true" ]] && [[ "$skip_unchanged" != "false" ]]; then
   exit 2
 fi
 
-repo_url="{{ deploy_pull_repo_url }}"
-token_file="{{ deploy_pull_secrets_file }}"
+repo_url="{{ ansible_pull_repo_url }}"
+token_file="{{ ansible_pull_secrets_file }}"
 state_key="${branch//\//_}.${playbook//\//_}"
 last_commit_file="/var/lib/ansible-pull/last-commit.$state_key"
 

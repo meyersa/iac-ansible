@@ -38,11 +38,11 @@ Shared functions across the main components
 
 ## Playbooks
 
-| File                        | Trigger        | Description                                                    |
-| --------------------------- | -------------- | -------------------------------------------------------------- |
-| `playbooks/ci.yml`          | GitHub Actions | Pulls latest Compose structure and runs `docker compose up -d` |
-| `playbooks/setup.yml`       | Cron           | Reconciles the server configuration                            |
-| `playbooks/maintenance.yml` | Cron           | Updates and cleans the system                                  |
+| File                      | Trigger      | Description                                   |
+| ------------------------- | ------------ | --------------------------------------------- |
+| `playbooks/configure.yml` | Ansible pull | Reconciles the server configuration           |
+| `playbooks/deploy.yml`    | Ansible pull | Deploys configured services                   |
+| `playbooks/maintain.yml`  | Ansible pull | Updates and cleans the system                 |
 
 ## Standards
 

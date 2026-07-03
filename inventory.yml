@@ -6,15 +6,15 @@ all:
         ansible_user: ubuntu
         ansible_python_interpreter: /usr/bin/python3
         DEPLOY_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
-        deploy_pull_actions_user: actions
-        deploy_pull_repo_url: https://github.com/meyersa/iac-ansible.git
-        deploy_pull_secrets_file: /etc/ansible-pull/bws_access_token
-        deploy_pull_default_branch: main
-        deploy_pull_default_playbook: deploy-self
-        deploy_pull_skip_unchanged: true
-        deploy_pull_default_timer_enabled: false
-        deploy_pull_timer_on_calendar: "*-*-* 03:00:00"
-        deploy_pull_timer_randomized_delay_sec: 30m
+        ansible_pull_actions_user: actions
+        ansible_pull_repo_url: https://github.com/meyersa/iac-ansible.git
+        ansible_pull_secrets_file: /etc/ansible-pull/bws_access_token
+        ansible_pull_skip_unchanged: false
+        ansible_pull_maintenance_enabled: true
+        ansible_pull_maintenance_branch: main
+        ansible_pull_maintenance_playbook: maintain
+        ansible_pull_maintenance_timer: "Mon *-*-* 01:00:00"
+        ansible_pull_maintenance_randomized_delay_sec: 30m
 
         # Storage
         CONFIG_DIR: /etc 

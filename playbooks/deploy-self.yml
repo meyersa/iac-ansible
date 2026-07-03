@@ -1,6 +1,0 @@
---- 
-- name: Deploy to Host Playbook
-  hosts: all
-  become: true 
-  roles: 
-    - deploy
