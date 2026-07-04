@@ -6,8 +6,9 @@
     - name: Send deploy start webhook
       ansible.builtin.include_role:
         name: utility
-        tasks_from: info_webhook
+        tasks_from: webhook
       vars:
+        webhook_status: success
         webhook_title: "Deploy started"
         webhook_description: "Starting deploy on {{ inventory_hostname }}"
         webhook_fields:
@@ -28,10 +29,12 @@
         - name: Send deploy finish webhook
           ansible.builtin.include_role:
             name: utility
-            tasks_from: info_webhook
+            tasks_from: webhook
           vars:
+            webhook_status: success
             webhook_title: "Deploy finished"
             webhook_description: "Finished deploy on {{ inventory_hostname }}"
+            webhook_color: 3066993
             webhook_fields:
               - name: Host
                 value: "{{ inventory_hostname }}"
@@ -46,8 +49,9 @@
         - name: Send deploy failure webhook
           ansible.builtin.include_role:
             name: utility
-            tasks_from: error_webhook
+            tasks_from: webhook
           vars:
+            webhook_status: failed
             webhook_title: "Deploy failed"
             webhook_description: "Deploy failed on {{ inventory_hostname }}"
             webhook_fields:

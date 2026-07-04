@@ -8,8 +8,9 @@
     - name: Send maintenance start webhook
       ansible.builtin.include_role:
         name: utility
-        tasks_from: info_webhook
+        tasks_from: webhook
       vars:
+        webhook_status: success
         webhook_title: "Maintenance started"
         webhook_description: "Starting maintenance on {{ inventory_hostname }}"
         webhook_fields:
@@ -30,10 +31,12 @@
         - name: Send maintenance finish webhook
           ansible.builtin.include_role:
             name: utility
-            tasks_from: info_webhook
+            tasks_from: webhook
           vars:
+            webhook_status: success
             webhook_title: "Maintenance finished"
             webhook_description: "Finished maintenance on {{ inventory_hostname }}"
+            webhook_color: 3066993
             webhook_fields:
               - name: Host
                 value: "{{ inventory_hostname }}"
@@ -58,8 +61,9 @@
         - name: Send maintenance failure webhook
           ansible.builtin.include_role:
             name: utility
-            tasks_from: error_webhook
+            tasks_from: webhook
           vars:
+            webhook_status: failed
             webhook_title: "Maintenance failed"
             webhook_description: "Maintenance failed on {{ inventory_hostname }}"
             webhook_fields:
