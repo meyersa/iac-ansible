@@ -6,12 +6,25 @@
       ansible.builtin.set_fact:
         bw_DEPLOY_USER: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
 
+    - name: Create Ansible managed resources group
+      ansible.builtin.group:
+        name: "{{ ansible_managed_group }}"
+        state: present
+
+    - name: Add Ansible user to managed resources group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: "{{ ansible_managed_group }}"
+        append: true
+
     - name: Create login user
       ansible.builtin.user:
         name: "{{ bw_DEPLOY_USER }}"
         shell: /bin/bash
         comment: "Login User"
-        groups: sudo
+        groups:
+          - sudo
+          - "{{ ansible_managed_group }}"
         append: true
 
     - name: Create Alloy service account

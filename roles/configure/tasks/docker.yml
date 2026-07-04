@@ -9,7 +9,7 @@
         state: present
 
     - name: Get DEB architecture
-      command: dpkg --print-architecture
+      ansible.builtin.command: dpkg --print-architecture
       register: deb_architecture
       changed_when: false
 
@@ -37,6 +37,9 @@
     - name: Configure Docker Daemon
       ansible.builtin.copy:
         dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: "0644"
         content: |
           {
             "metrics-addr": "0.0.0.0:9323",
@@ -46,6 +49,7 @@
               "max-file": "3"
             }
           }
+      notify: restart docker
 
     - name: Add Docker group
       ansible.builtin.group:

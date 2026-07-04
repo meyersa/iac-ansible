@@ -6,6 +6,7 @@ all:
         ansible_user: ubuntu
         ansible_python_interpreter: /usr/bin/python3
         DEPLOY_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
+        ansible_managed_group: ansible_managed
         ansible_pull_actions_user: actions
         ansible_pull_repo_url: https://github.com/meyersa/iac-ansible.git
         ansible_pull_secrets_file: /etc/ansible-pull/bws_access_token

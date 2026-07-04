@@ -4,6 +4,24 @@
   vars:
     CD_DIR: "{{ CONFIG_DIR }}/compose"
   block:
+    - name: Create Compose resources directory
+      ansible.builtin.file:
+        path: "{{ CD_DIR }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "2770"
+
+    - name: Read trusted Git directories
+      ansible.builtin.command: git config --system --get-all safe.directory
+      register: git_safe_directories
+      changed_when: false
+      failed_when: false
+
+    - name: Trust Compose resources Git checkout
+      ansible.builtin.command: "git config --system --add safe.directory {{ CD_DIR }}"
+      when: CD_DIR not in (git_safe_directories.stdout_lines | default([]))
+
     - name: Clone IAC
       ansible.builtin.git:
         repo: https://github.com/meyersa/iac-cd.git
@@ -11,6 +29,15 @@
         version: main
         force: true
       register: git_checkout
+
+    - name: Set Compose resources ownership
+      ansible.builtin.file:
+        path: "{{ CD_DIR }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "u=rwX,g=rwX,o="
+        recurse: true
 
     - name: Find templates
       ansible.builtin.find:
@@ -24,9 +51,29 @@
       ansible.builtin.template:
         src: "{{ item.path }}"
         dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "0660"
         force: true
       loop: "{{ j2_files.files }}"
       register: rendered_templates
+
+    - name: Set rendered Compose resources ownership
+      ansible.builtin.file:
+        path: "{{ CD_DIR }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "u=rwX,g=rwX,o="
+        recurse: true
+
+    - name: Preserve Compose resources directory permissions
+      ansible.builtin.file:
+        path: "{{ CD_DIR }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "2770"
 
     - name: Find compose projects
       ansible.builtin.find:

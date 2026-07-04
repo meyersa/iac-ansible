@@ -28,7 +28,6 @@
           - tcpdump
           - netcat-traditional
           - ansible
-          - npm
-        state: latest
+        state: present
         update_cache: true
         lock_timeout: 300

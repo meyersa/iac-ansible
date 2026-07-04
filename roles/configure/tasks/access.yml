@@ -3,7 +3,7 @@
   tags: ["access"]
   block:
     - name: Create .ssh directory
-      file:
+      ansible.builtin.file:
         path: "/home/{{ bw_DEPLOY_USER }}/.ssh"
         state: directory
         owner: "{{ bw_DEPLOY_USER }}"
@@ -11,13 +11,13 @@
         mode: "0700"
 
     - name: Fetch public keys from GitHub
-      uri:
+      ansible.builtin.uri:
         url: "https://api.github.com/users/meyersa/keys"
         return_content: yes
       register: github_keys
 
     - name: Ensure authorized_keys file exists
-      file:
+      ansible.builtin.file:
         path: "/home/{{ bw_DEPLOY_USER }}/.ssh/authorized_keys"
         state: touch
         owner: "{{ bw_DEPLOY_USER }}"
@@ -25,7 +25,7 @@
         mode: "0600"
 
     - name: Add GitHub public keys to authorized_keys
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "/home/{{ bw_DEPLOY_USER }}/.ssh/authorized_keys"
         line: "{{ item.key }}"
         create: yes
@@ -36,19 +36,19 @@
       loop: "{{ github_keys.json }}"
 
     - name: Ensure sudoers file for admin user
-      copy:
+      ansible.builtin.copy:
         dest: "/etc/sudoers.d/{{ bw_DEPLOY_USER }}"
         content: "{{ bw_DEPLOY_USER }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
     - name: Ensure sudoers file for ansible user
-      copy:
+      ansible.builtin.copy:
         dest: "/etc/sudoers.d/{{ ansible_user }}"
         content: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
     - name: Sync Ansible_user authorized keys
-      get_url:
+      ansible.builtin.get_url:
         url: "https://raw.githubusercontent.com/meyersa/ansible/main/ansible.pub"
         dest: "/home/{{ ansible_user }}/.ssh/authorized_keys"
         owner: "{{ ansible_user }}"
@@ -56,8 +56,9 @@
         mode: "0600"
 
     - name: Disable passwordless SSH authentication
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^#?PasswordAuthentication\s+yes'
         line: "PasswordAuthentication no"
         state: present
+      notify: reload sshd

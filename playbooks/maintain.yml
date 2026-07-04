@@ -26,7 +26,6 @@
         - name: Run maintenance role
           ansible.builtin.include_role:
             name: maintain
-          register: maintain_result
 
         - name: Send maintenance finish webhook
           ansible.builtin.include_role:
@@ -43,9 +42,6 @@
                 inline: true
               - name: Playbook
                 value: maintain
-                inline: true
-              - name: Changed
-                value: "{{ maintain_result.changed | default(false) | string }}"
                 inline: true
               - name: Reboot requested
                 value: "{{ reboot | bool | string }}"

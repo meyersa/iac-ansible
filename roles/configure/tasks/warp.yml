@@ -57,7 +57,7 @@
       register: warp_check_timer_result
 
     - name: Reload systemd daemon if service or timer files changed
-      command: systemctl daemon-reload
+      ansible.builtin.command: systemctl daemon-reload
       when: warp_svc_service_result.changed or warp_check_service_result.changed or warp_check_timer_result.changed
 
     - name: Enable and start Warp
@@ -73,13 +73,13 @@
         state: started
 
     - name: Run warp-cli and register the output
-      command: warp-cli --accept-tos status
+      ansible.builtin.command: warp-cli --accept-tos status
       register: warp_cli_output
       retries: 3 
       changed_when: false
 
     - name: Run warp-cli registration if needed
-      command: warp-cli --accept-tos registration new
+      ansible.builtin.command: warp-cli --accept-tos registration new
       when: warp_cli_output.stdout_lines[0] == "Registration Missing"
 
     - name: Connect Warp

@@ -24,7 +24,6 @@
         - name: Run configure role
           ansible.builtin.include_role:
             name: configure
-          register: configure_result
 
         - name: Send configure finish webhook
           ansible.builtin.include_role:
@@ -41,9 +40,6 @@
                 inline: true
               - name: Playbook
                 value: configure
-                inline: true
-              - name: Changed
-                value: "{{ configure_result.changed | default(false) | string }}"
                 inline: true
       rescue:
         - name: Send configure failure webhook

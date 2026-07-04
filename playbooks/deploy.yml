@@ -24,7 +24,6 @@
         - name: Run deploy role
           ansible.builtin.include_role:
             name: deploy
-          register: deploy_result
 
         - name: Send deploy finish webhook
           ansible.builtin.include_role:
@@ -41,9 +40,6 @@
                 inline: true
               - name: Playbook
                 value: deploy
-                inline: true
-              - name: Changed
-                value: "{{ deploy_result.changed | default(false) | string }}"
                 inline: true
       rescue:
         - name: Send deploy failure webhook
