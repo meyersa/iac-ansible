@@ -20,7 +20,8 @@ The configure playbook then reconciles the longer-term account model:
 | Account | Managed by | Purpose |
 | ------- | ---------- | ------- |
 | `ansible_user` | Inventory | Bootstrap and break-glass admin account used by Ansible. |
-| Login user | Bitwarden item referenced by `DEPLOY_USER` | Personal interactive SSH account with sudo access. |
+| Login user | Bitwarden item referenced by `LOGIN_USER` | Personal interactive SSH account with sudo access. |
+| Login aliases | Bitwarden item referenced by `LOGIN_USER_ALIASES` | Comma-separated SSH usernames that map to the login user UID, home, and shell. |
 | `ansible_managed_group` | Inventory | Shared group for Ansible-owned managed resources; includes `ansible_user` and the login user. |
 | `alloy` | `roles/configure/tasks/accounts.yml` | Non-login service account for Grafana Alloy. |
 | `actions` | `ansible_pull_actions_user` | Restricted automation account that can trigger `ansible-pull` systemd units. |

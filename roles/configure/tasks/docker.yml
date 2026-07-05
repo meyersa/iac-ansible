@@ -59,7 +59,9 @@
     - name: Add ansible to Docker group
       ansible.builtin.user:
         name: "{{ ansible_user }}"
-        groups: docker
+        groups:
+          - docker
+          - "{{ ansible_managed_group }}"
         append: true
 
     - name: Add alloy to Docker group
@@ -70,9 +72,20 @@
 
     - name: Add generic user to Docker group
       ansible.builtin.user:
-        name: "{{ bw_DEPLOY_USER }}"
-        groups: docker
+        name: "{{ bw_LOGIN_USER }}"
+        groups:
+          - docker
+          - "{{ ansible_managed_group }}"
         append: true
+
+    - name: Add login user aliases to Docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups:
+          - docker
+          - "{{ ansible_managed_group }}"
+        append: true
+      loop: "{{ LOGIN_USER_aliases | default([]) }}"
 
     - name: Enable and start containerd
       ansible.builtin.systemd:

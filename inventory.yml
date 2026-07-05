@@ -5,7 +5,8 @@ all:
         # Ansible
         ansible_user: ubuntu
         ansible_python_interpreter: /usr/bin/python3
-        DEPLOY_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
+        LOGIN_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
+        LOGIN_USER_ALIASES: 2c31e566-b29f-4a86-8489-b47e00f442e5
         ansible_managed_group: ansible_managed
         ansible_pull_actions_user: actions
         ansible_pull_repo_url: https://github.com/meyersa/iac-ansible.git

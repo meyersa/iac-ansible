@@ -4,7 +4,20 @@
   block:
     - name: Get login user from BW
       ansible.builtin.set_fact:
-        bw_DEPLOY_USER: "{{ lookup('bitwarden.secrets.lookup', DEPLOY_USER) }}"
+        bw_LOGIN_USER: "{{ lookup('bitwarden.secrets.lookup', LOGIN_USER) }}"
+
+    - name: Get login user aliases from BW
+      ansible.builtin.set_fact:
+        LOGIN_USER_aliases: >-
+          {{
+            lookup('bitwarden.secrets.lookup', LOGIN_USER_ALIASES)
+            | default('', true)
+            | split(',')
+            | map('trim')
+            | reject('equalto', '')
+            | reject('equalto', bw_LOGIN_USER)
+            | list
+          }}
 
     - name: Create Ansible managed resources group
       ansible.builtin.group:
@@ -19,13 +32,35 @@
 
     - name: Create login user
       ansible.builtin.user:
-        name: "{{ bw_DEPLOY_USER }}"
+        name: "{{ bw_LOGIN_USER }}"
         shell: /bin/bash
         comment: "Login User"
         groups:
           - sudo
           - "{{ ansible_managed_group }}"
         append: true
+
+    - name: Read login user account details
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ bw_LOGIN_USER }}"
+
+    - name: Create login user aliases
+      ansible.builtin.user:
+        name: "{{ item }}"
+        uid: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][1] }}"
+        group: "{{ bw_LOGIN_USER }}"
+        home: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][4] }}"
+        shell: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][5] }}"
+        comment: "Login User Alias for {{ bw_LOGIN_USER }}"
+        non_unique: true
+        create_home: false
+        password_lock: true
+        groups:
+          - sudo
+          - "{{ ansible_managed_group }}"
+        append: true
+      loop: "{{ LOGIN_USER_aliases }}"
 
     - name: Create Alloy service account
       ansible.builtin.user:
