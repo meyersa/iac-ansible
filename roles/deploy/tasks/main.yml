@@ -24,9 +24,9 @@
 
     - name: Clone IAC
       ansible.builtin.git:
-        repo: https://github.com/meyersa/iac-cd.git
+        repo: "{{ deploy_repo_url }}"
         dest: "{{ CD_DIR }}"
-        version: main
+        version: "{{ deploy_repo_branch }}"
         force: true
       register: git_checkout
 
@@ -129,17 +129,36 @@
       loop: "{{ projects }}"
       register: baseline_up
 
-    - name: Collect recreated services from baseline
+    - name: Collect baseline Compose output
       ansible.builtin.set_fact:
-        baseline_recreated: >-
+        baseline_compose_output: >-
+          {%- set out = [] -%}
+          {%- for result in (baseline_up.results | default([])) -%}
+            {%- set _ = out.append(result.stdout | default('')) -%}
+            {%- set _ = out.append(result.stderr | default('')) -%}
+          {%- endfor -%}
+          {{ out | join('\n') }}
+
+    - name: Collect changed containers from baseline
+      ansible.builtin.set_fact:
+        baseline_changed_containers: >-
           {{
-            baseline_up.results
-            | map(attribute='stdout')
-            | join(' ')
-            | regex_findall('Recreating ([^ ]+)')
-            | list
+            ((
+                baseline_compose_output
+                | regex_findall('(?m)^\s*Container\s+(\S+)\s+(?:Create|Created|Creating|Recreate|Recreated|Recreating|Restart|Restarted|Restarting|Start|Started|Starting|Remove|Removed|Removing)\b')
+              )
+              +
+              (
+                baseline_compose_output
+                | regex_findall('(?m)^\s*(?:Creating|Recreating|Starting|Restarting|Removing)\s+(\S+)')
+              ))
             | unique
+            | list
           }}
+
+    - name: Track baseline recreated containers
+      ansible.builtin.set_fact:
+        baseline_recreated: "{{ baseline_changed_containers }}"
 
     - name: Force recreate impacted services (excluding baseline ones)
       ansible.builtin.command:
@@ -148,6 +167,38 @@
           -f {{ CD_DIR }}/compose.{{ item.split(':')[0] }}.yml
           up -d --force-recreate {{ item.split(':')[1] }}
       loop: "{{ changed_services }}"
+      register: force_recreate
       when:
         - changed_services | length > 0
-        - item.split(':')[1] not in baseline_recreated
+        - (baseline_recreated | select('search', item.split(':')[1]) | list | length) == 0
+
+    - name: Collect force recreate Compose output
+      ansible.builtin.set_fact:
+        force_recreate_compose_output: >-
+          {%- set out = [] -%}
+          {%- for result in (force_recreate.results | default([])) -%}
+            {%- set _ = out.append(result.stdout | default('')) -%}
+            {%- set _ = out.append(result.stderr | default('')) -%}
+          {%- endfor -%}
+          {{ out | join('\n') }}
+
+    - name: Collect changed containers from force recreate
+      ansible.builtin.set_fact:
+        force_recreated_containers: >-
+          {{
+            ((
+                force_recreate_compose_output
+                | regex_findall('(?m)^\s*Container\s+(\S+)\s+(?:Create|Created|Creating|Recreate|Recreated|Recreating|Restart|Restarted|Restarting|Start|Started|Starting|Remove|Removed|Removing)\b')
+              )
+              +
+              (
+                force_recreate_compose_output
+                | regex_findall('(?m)^\s*(?:Creating|Recreating|Starting|Restarting|Removing)\s+(\S+)')
+              ))
+            | unique
+            | list
+          }}
+
+    - name: Publish changed containers
+      ansible.builtin.set_fact:
+        deploy_changed_containers: "{{ ((baseline_changed_containers | default([])) + (force_recreated_containers | default([]))) | unique | list }}"

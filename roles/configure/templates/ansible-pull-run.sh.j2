@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 BRANCH:PLAYBOOK [--force]" >&2
+  echo "Usage: $0 BRANCH:PLAYBOOK[:DOWNSTREAM_BRANCH] [--force]" >&2
 }
 
 input="${1:-}"
@@ -20,16 +20,21 @@ elif [[ -n "${2:-}" ]]; then
   exit 2
 fi
 
-branch="${input%%:*}"
-playbook="${input#*:}"
+IFS=: read -r branch playbook downstream_branch extra <<<"$input"
+downstream_branch="${downstream_branch:-$branch}"
 
-if [[ "$branch" == "$input" ]] || [[ -z "$branch" ]] || [[ -z "$playbook" ]]; then
+if [[ -n "${extra:-}" ]] || [[ -z "$branch" ]] || [[ -z "$playbook" ]]; then
   usage
   exit 2
 fi
 
 if [[ ! "$branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
   echo "Invalid branch name: $branch" >&2
+  exit 2
+fi
+
+if [[ ! "$downstream_branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$downstream_branch" == .* ]] || [[ "$downstream_branch" == */.* ]] || [[ "$downstream_branch" == *..* ]]; then
+  echo "Invalid downstream branch name: $downstream_branch" >&2
   exit 2
 fi
 
@@ -50,8 +55,9 @@ if [[ "$skip_unchanged" != "true" ]] && [[ "$skip_unchanged" != "false" ]]; then
 fi
 
 repo_url="{{ ansible_pull_repo_url }}"
+deploy_repo_url="{{ deploy_repo_url }}"
 token_file="{{ ansible_pull_secrets_file }}"
-state_key="${branch//\//_}.${playbook//\//_}"
+state_key="${branch//\//_}.${playbook//\//_}.${downstream_branch//\//_}"
 last_commit_file="/var/lib/ansible-pull/last-commit.$state_key"
 
 mkdir -p /var/lib/ansible-pull
@@ -69,6 +75,17 @@ if [[ "$skip_unchanged" == "true" ]]; then
   if [[ -z "$remote_commit" ]]; then
     echo "Unable to find branch '$branch' in $repo_url" >&2
     exit 1
+  fi
+
+  if [[ "$playbook" == "playbooks/deploy.yml" ]]; then
+    downstream_commit="$(git ls-remote "$deploy_repo_url" "refs/heads/$downstream_branch" | awk '{print $1}')"
+
+    if [[ -z "$downstream_commit" ]]; then
+      echo "Unable to find downstream branch '$downstream_branch' in $deploy_repo_url" >&2
+      exit 1
+    fi
+
+    remote_commit="$remote_commit.$downstream_commit"
   fi
 
   last_commit=""
@@ -90,6 +107,7 @@ fi
 sudo -E ansible-pull \
   -U "$repo_url" \
   -C "$branch" \
+  -e "deploy_repo_branch=$downstream_branch" \
   -l "{{ inventory_hostname }}" \
   "$playbook"
 

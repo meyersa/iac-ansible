@@ -16,6 +16,8 @@ all:
         ansible_pull_maintenance_playbook: maintain
         ansible_pull_maintenance_timer: "Mon *-*-* 01:00:00"
         ansible_pull_maintenance_randomized_delay_sec: 30m
+        deploy_repo_url: https://github.com/meyersa/iac-cd.git
+        deploy_repo_branch: main
 
         # Storage
         CONFIG_DIR: /etc 

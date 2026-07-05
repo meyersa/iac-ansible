@@ -112,13 +112,51 @@ sudo apt install ansible
 Configure installs a wrapper at `/usr/local/bin/ansible-pull-run` and systemd units using this pattern:
 
 ```text
-ansible-pull@branch:playbook.service
+ansible-pull@branch:playbook[:downstream-branch].service
 ```
 
 For example, automation can trigger:
 
 ```bash
 systemctl start ansible-pull@main:deploy.service
+```
+
+Hosts also get a small command wrapper on the system path:
+
+```bash
+ap deploy -b main -d feature/branch
+ap configure -b main
+ap maintain
+```
+
+`ap` starts the systemd unit and streams the journal output from that run.
+
+The host also installs a Compose shortcut:
+
+```bash
+dc monitoring ps
+dc monitoring logs -f grafana
+dc monitoring up -d --force-recreate grafana
+```
+
+For `deploy`, the optional downstream branch selects the `iac-cd` branch:
+
+```bash
+systemctl start ansible-pull@main:deploy:feature-branch.service
+```
+
+When triggering through the restricted `actions` SSH command, the wrapper escapes the systemd unit name for you:
+
+```bash
+ssh actions@host ansible-pull main:deploy:feature/branch
+```
+
+The SSH wrapper also streams the journal output from the triggered run.
+
+For direct `systemctl` calls with branch names that contain `/`, escape the unit instance first:
+
+```bash
+systemd-escape --template=ansible-pull@.service 'main:deploy:feature/branch'
 ```
 
 ## Compose Operations
@@ -134,15 +172,15 @@ Compose files are deployed under `/etc/compose` and follow this naming pattern:
 Useful examples:
 
 ```bash
-docker compose -f /etc/compose/compose.monitoring.yml ps
-docker compose -f /etc/compose/compose.monitoring.yml logs -f grafana
-docker compose -f /etc/compose/compose.monitoring.yml up -d --force-recreate grafana
-docker compose -f /etc/compose/compose.monitoring.yml stop grafana
-docker compose -f /etc/compose/compose.monitoring.yml rm -f grafana
+dc monitoring ps
+dc monitoring logs -f grafana
+dc monitoring up -d --force-recreate grafana
+dc monitoring stop grafana
+dc monitoring rm -f grafana
 ```
 
 To take down an entire Compose project, including named volumes:
 
 ```bash
-docker compose -f /etc/compose/compose.monitoring.yml down -v
+dc monitoring down -v
 ```

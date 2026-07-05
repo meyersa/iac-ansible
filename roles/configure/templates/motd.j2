@@ -1,0 +1,17 @@
+
+Helper Commands: 
+
+  ap PLAYBOOK [-b BRANCH] [-d DEPLOY_BRANCH]
+    Run an Ansible Pull systemd job.
+    Examples:
+      ap configure
+      ap deploy -b main -d feature/branch
+      ap maintain
+
+  dc STACK DOCKER_COMPOSE_ARGS...
+    Run docker compose against /etc/compose/compose.<stack>.yml.
+    Examples:
+      dc monitoring ps
+      dc monitoring logs -f grafana
+      dc monitoring up -d --force-recreate grafana
+

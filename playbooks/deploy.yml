@@ -41,6 +41,9 @@
               - name: Playbook
                 value: deploy
                 inline: true
+              - name: Changed containers
+                value: "{{ (deploy_changed_containers | default([]) | length > 0) | ternary((deploy_changed_containers | join('\n') | truncate(900, true)), 'none') }}"
+                inline: false
       rescue:
         - name: Send deploy failure webhook
           ansible.builtin.include_role:

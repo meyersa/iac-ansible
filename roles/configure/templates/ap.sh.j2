@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: ap PLAYBOOK [-b BRANCH] [-d DEPLOY_BRANCH]
+
+Examples:
+  ap configure
+  ap deploy -b main -d feature/branch
+  ap maintain -b main
+
+Options:
+  -b BRANCH         iac-ansible branch to run. Defaults to main.
+  -d DEPLOY_BRANCH iac-cd branch for deploy. Defaults to main.
+USAGE
+}
+
+start_unit() {
+  local unit="$1"
+  local active_state
+  local exec_status
+  local invocation_id
+  local journal_pid=""
+  local result
+
+  systemctl reset-failed "$unit" >/dev/null 2>&1 || true
+  systemctl start --no-block "$unit"
+
+  for _ in {1..50}; do
+    invocation_id="$(systemctl show "$unit" --property=InvocationID --value 2>/dev/null || true)"
+    if [[ -n "$invocation_id" ]]; then
+      break
+    fi
+    sleep 0.1
+  done
+
+  if [[ -n "$invocation_id" ]]; then
+    journalctl _SYSTEMD_INVOCATION_ID="$invocation_id" --no-pager -o cat -f &
+  else
+    journalctl -u "$unit" -n 0 --no-pager -o cat -f &
+  fi
+  journal_pid="$!"
+
+  while true; do
+    active_state="$(systemctl show "$unit" --property=ActiveState --value 2>/dev/null || true)"
+    if [[ "$active_state" != "activating" && "$active_state" != "active" ]]; then
+      break
+    fi
+    sleep 0.5
+  done
+
+  if [[ -n "$journal_pid" ]]; then
+    sleep 0.2
+    kill "$journal_pid" >/dev/null 2>&1 || true
+    wait "$journal_pid" >/dev/null 2>&1 || true
+  fi
+
+  result="$(systemctl show "$unit" --property=Result --value 2>/dev/null || true)"
+  exec_status="$(systemctl show "$unit" --property=ExecMainStatus --value 2>/dev/null || true)"
+
+  if [[ "$result" == "success" && "${exec_status:-0}" == "0" ]]; then
+    return 0
+  fi
+
+  return "${exec_status:-1}"
+}
+
+branch="main"
+deploy_branch="main"
+playbook=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -b|--branch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1." >&2
+        usage
+        exit 2
+      fi
+      branch="${2:-}"
+      shift 2
+      ;;
+    -d|--deploy-branch|--downstream-branch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1." >&2
+        usage
+        exit 2
+      fi
+      deploy_branch="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 2
+      ;;
+    *)
+      if [[ -n "$playbook" ]]; then
+        echo "Only one playbook can be specified." >&2
+        usage
+        exit 2
+      fi
+      playbook="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$playbook" ]] || [[ -z "$branch" ]] || [[ -z "$deploy_branch" ]]; then
+  usage
+  exit 2
+fi
+
+if [[ ! "$branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
+  echo "Invalid branch name: $branch" >&2
+  exit 2
+fi
+
+if [[ ! "$deploy_branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$deploy_branch" == .* ]] || [[ "$deploy_branch" == */.* ]] || [[ "$deploy_branch" == *..* ]]; then
+  echo "Invalid deploy branch name: $deploy_branch" >&2
+  exit 2
+fi
+
+if [[ "$playbook" == playbooks/* ]]; then
+  playbook="${playbook#playbooks/}"
+fi
+
+playbook="${playbook%.yml}"
+playbook="${playbook%.yaml}"
+
+if [[ ! "$playbook" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$playbook" == .* ]] || [[ "$playbook" == */.* ]] || [[ "$playbook" == *..* ]]; then
+  echo "Invalid playbook name: $playbook" >&2
+  exit 2
+fi
+
+unit_input="$branch:$playbook"
+if [[ "$playbook" == "deploy" ]]; then
+  unit_input="$unit_input:$deploy_branch"
+fi
+
+unit="$(systemd-escape --template=ansible-pull@.service "$unit_input")"
+start_unit "$unit"
