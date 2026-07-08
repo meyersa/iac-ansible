@@ -37,7 +37,6 @@ Create the Bitwarden token file at the path configured by `ansible_pull_secrets_
 ```
 
 The file should contain the Bitwarden Secrets Manager access token used by `bitwarden.secrets.lookup`. The configure playbook enforces root ownership and `0600` permissions, but the file must exist before configure reaches the Ansible Pull setup tasks.
-
 Manual playbook runs also need Bitwarden auth available on the control machine, typically by exporting the same token before running Ansible:
 
 ```bash
@@ -48,10 +47,13 @@ After configure installs the Ansible Pull wrapper, pull-based runs load `BWS_ACC
 
 ### First Run
 
-Install Ansible on the control machine, make sure the target host is listed in `inventory.yml`, then run configure:
+Install Ansible, load BW password, and run Ansible pull 
 
 ```bash
-ansible-playbook -i inventory.yml playbooks/configure.yml
+sudo apt install ansible
+pip install bitwarden-sdk --break-system-packages
+sudo ansible-galaxy collection install bitwarden.secrets
+sudo -E ansible-pull -U https://github.com/meyersa/iac-ansible.git -C main -l dev playbooks/configure.yml
 ```
 
 After configure succeeds, the host has the local accounts, SSH access, packages, Docker, supporting services, and Ansible Pull systemd units needed for ongoing automation.
@@ -185,3 +187,7 @@ To take down an entire Compose project, including named volumes:
 ```bash
 dc monitoring down -v
 ```
+
+## Actions 
+
+On pull requests to main, changes are applied to the Dev server instance and on main. On pull request merges to main, the changes are applied to Prod. This allows for validation of changes before continuing to Prod. 

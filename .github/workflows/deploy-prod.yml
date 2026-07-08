@@ -1,0 +1,47 @@
+---
+name: deploy-prod
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-prod-main
+  cancel-in-progress: false
+
+jobs:
+  deploy-prod:
+    name: Deploy prod
+    runs-on: ubuntu-latest
+    env:
+      SSH_PROD_HOST: ${{ secrets.SSH_PROD_HOST }}
+      SSH_PROD_USER: ${{ secrets.SSH_PROD_USER }}
+      BRANCH_NAME: main
+
+    steps:
+      - name: Start SSH agent
+        env:
+          SSH_PROD_ACTIONS_PRIVATE_KEY: ${{ secrets.SSH_PROD_ACTIONS_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          eval "$(ssh-agent -s)"
+          ssh-add - <<<"${SSH_PROD_ACTIONS_PRIVATE_KEY}"
+          {
+            echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
+            echo "SSH_AGENT_PID=${SSH_AGENT_PID}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Trust prod host
+        run: |
+          set -euo pipefail
+          ssh-keyscan -H "${SSH_PROD_HOST}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Run prod configure
+        run: |
+          set -euo pipefail
+          branch_spec="${BRANCH_NAME}:configure"
+          ssh -v "${SSH_PROD_USER}@${SSH_PROD_HOST}" "ansible-pull $(printf '%q' "${branch_spec}")"
