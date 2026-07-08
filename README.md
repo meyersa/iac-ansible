@@ -130,7 +130,7 @@ ap configure -b main
 ap maintain
 ```
 
-`ap` starts the systemd unit and streams the journal output from that run.
+`ap` runs `sudo /usr/local/bin/ansible-pull-run` directly, so Ansible output streams in the terminal.
 
 The host also installs a Compose shortcut:
 
