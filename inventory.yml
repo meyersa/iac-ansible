@@ -58,6 +58,9 @@ all:
 
       hosts:
         dev:
+          # IaC 
+          SSH_ACTIONS_PUBLIC_KEY: 3e963d80-a19c-4c7d-933b-b481001a1882
+
           # Reqs 
           CLOUDFLARED_TOKEN: a2d5aafc-3b8c-4a79-8251-b4450164f80b
 

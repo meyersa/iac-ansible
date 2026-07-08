@@ -47,12 +47,30 @@
         group: root
         mode: "0755"
 
+    - name: Build actions authorized keys
+      ansible.builtin.set_fact:
+        ansible_pull_actions_authorized_keys: >-
+          {{
+            (
+              [lookup('ansible.builtin.file', playbook_dir ~ '/../ansible.pub')]
+              +
+              (
+                [lookup('bitwarden.secrets.lookup', SSH_ACTIONS_PUBLIC_KEY)]
+                if (SSH_ACTIONS_PUBLIC_KEY is defined)
+                else []
+              )
+            )
+            | unique
+            | list
+          }}
+
     - name: Allow actions user SSH key to trigger only ansible-pull jobs
       ansible.builtin.copy:
         dest: "/home/{{ ansible_pull_actions_user }}/.ssh/authorized_keys"
-        content: >
-          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty
-          {{ lookup('ansible.builtin.file', playbook_dir ~ '/../ansible.pub') }}
+        content: |
+          {% for actions_key in ansible_pull_actions_authorized_keys %}
+          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty {{ actions_key }}
+          {% endfor %}
         owner: "{{ ansible_pull_actions_user }}"
         group: "{{ ansible_pull_actions_user }}"
         mode: "0600"
