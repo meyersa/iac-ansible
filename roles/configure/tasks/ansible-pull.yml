@@ -1,0 +1,119 @@
+---
+- name: Configure ansible-pull runner resources
+  tags: ["config", "ansible-pull"]
+  block:
+    - name: Create ansible-pull directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: /var/lib/ansible-pull
+          owner: root
+          group: root
+          mode: "0755"
+        - path: "/home/{{ ansible_pull_actions_user }}/.ssh"
+          owner: "{{ ansible_pull_actions_user }}"
+          group: "{{ ansible_pull_actions_user }}"
+          mode: "0700"
+        - path: /etc/polkit-1/rules.d
+          owner: root
+          group: root
+          mode: "0755"
+
+    - name: Secure ansible-pull secrets file
+      ansible.builtin.file:
+        path: "{{ ansible_pull_secrets_file }}"
+        state: file
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Install ansible-pull wrapper
+      ansible.builtin.template:
+        src: ansible-pull-run.sh.j2
+        dest: /usr/local/bin/ansible-pull-run
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install restricted SSH command wrapper
+      ansible.builtin.template:
+        src: ansible-pull-ssh-command.sh.j2
+        dest: /usr/local/bin/ansible-pull-ssh-command
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Build actions authorized keys
+      ansible.builtin.set_fact:
+        ansible_pull_actions_authorized_keys: >-
+          {{
+            (
+              [lookup('ansible.builtin.file', playbook_dir ~ '/../ansible.pub')]
+              +
+              (
+                [lookup('bitwarden.secrets.lookup', SSH_ACTIONS_PUBLIC_KEY)]
+                if (SSH_ACTIONS_PUBLIC_KEY is defined)
+                else []
+              )
+            )
+            | unique
+            | list
+          }}
+
+    - name: Allow actions user SSH key to trigger only ansible-pull jobs
+      ansible.builtin.copy:
+        dest: "/home/{{ ansible_pull_actions_user }}/.ssh/authorized_keys"
+        content: |
+          {% for actions_key in ansible_pull_actions_authorized_keys %}
+          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty {{ actions_key }}
+          {% endfor %}
+        owner: "{{ ansible_pull_actions_user }}"
+        group: "{{ ansible_pull_actions_user }}"
+        mode: "0600"
+
+    - name: Allow actions user to run ansible-pull wrapper
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/{{ ansible_pull_actions_user }}-ansible-pull"
+        content: "{{ ansible_pull_actions_user }} ALL=(root) NOPASSWD: /usr/local/bin/ansible-pull-run *\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s
+
+    - name: Install ansible-pull systemd service
+      ansible.builtin.template:
+        src: ansible-pull@.service.j2
+        dest: /etc/systemd/system/ansible-pull@.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install ansible-pull systemd timer
+      ansible.builtin.template:
+        src: ansible-pull@.timer.j2
+        dest: /etc/systemd/system/ansible-pull@.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Allow non-root users to start ansible-pull services
+      ansible.builtin.template:
+        src: 50-ansible-pull.rules.j2
+        dest: /etc/polkit-1/rules.d/50-ansible-pull.rules
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Reload systemd units
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Enable scheduled maintenance ansible-pull timer
+      ansible.builtin.systemd_service:
+        name: "ansible-pull@{{ ansible_pull_maintenance_branch }}:{{ ansible_pull_maintenance_playbook }}.timer"
+        enabled: "{{ ansible_pull_maintenance_enabled }}"
+        state: "{{ ansible_pull_maintenance_enabled | ternary('started', 'stopped') }}"

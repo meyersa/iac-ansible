@@ -1,0 +1,11 @@
+[Unit]
+Description=Scheduled ansible-pull %i
+
+[Timer]
+OnCalendar={{ ansible_pull_maintenance_timer }}
+RandomizedDelaySec={{ ansible_pull_maintenance_randomized_delay_sec }}
+Persistent=true
+Unit=ansible-pull@%i.service
+
+[Install]
+WantedBy=timers.target

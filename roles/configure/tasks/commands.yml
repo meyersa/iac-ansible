@@ -1,0 +1,19 @@
+---
+- name: Install host command wrappers
+  tags: ["commands", "ansible-pull", "deploy"]
+  block:
+    - name: Install ansible-pull command wrapper
+      ansible.builtin.template:
+        src: ap.sh.j2
+        dest: /usr/local/bin/ap
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Docker Compose command wrapper
+      ansible.builtin.template:
+        src: dc.sh.j2
+        dest: /usr/local/bin/dc
+        owner: root
+        group: root
+        mode: "0755"

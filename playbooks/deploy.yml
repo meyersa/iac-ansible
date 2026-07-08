@@ -1,6 +1,72 @@
---- 
+---
 - name: Deploy to Host Playbook
-  hosts: all 
-  become: true 
-  roles: 
-    - deploy
+  hosts: all
+  become: true
+  tasks:
+    - name: Send deploy start webhook
+      ansible.builtin.include_role:
+        name: utility
+        tasks_from: webhook
+      vars:
+        webhook_status: success
+        webhook_title: "Deploy started"
+        webhook_description: "Starting deploy on {{ inventory_hostname }}"
+        webhook_fields:
+          - name: Host
+            value: "{{ inventory_hostname }}"
+            inline: true
+          - name: Playbook
+            value: deploy
+            inline: true
+
+    - name: Run deploy
+      block:
+        - name: Run deploy role
+          ansible.builtin.include_role:
+            name: deploy
+
+        - name: Send deploy finish webhook
+          ansible.builtin.include_role:
+            name: utility
+            tasks_from: webhook
+          vars:
+            webhook_status: success
+            webhook_title: "Deploy finished"
+            webhook_description: "Finished deploy on {{ inventory_hostname }}"
+            webhook_color: 3066993
+            webhook_fields:
+              - name: Host
+                value: "{{ inventory_hostname }}"
+                inline: true
+              - name: Playbook
+                value: deploy
+                inline: true
+              - name: Changed containers
+                value: "{{ (deploy_changed_containers | default([]) | length > 0) | ternary((deploy_changed_containers | join('\n') | truncate(900, true)), 'none') }}"
+                inline: false
+      rescue:
+        - name: Send deploy failure webhook
+          ansible.builtin.include_role:
+            name: utility
+            tasks_from: webhook
+          vars:
+            webhook_status: failed
+            webhook_title: "Deploy failed"
+            webhook_description: "Deploy failed on {{ inventory_hostname }}"
+            webhook_fields:
+              - name: Host
+                value: "{{ inventory_hostname }}"
+                inline: true
+              - name: Playbook
+                value: deploy
+                inline: true
+              - name: Failed task
+                value: "{{ ansible_failed_task.name | default('unknown') }}"
+                inline: false
+              - name: Error
+                value: "{{ (ansible_failed_result.msg | default(ansible_failed_result.stderr | default('unknown error'))) | truncate(900, true) }}"
+                inline: false
+
+        - name: Fail deploy
+          ansible.builtin.fail:
+            msg: "{{ ansible_failed_result.msg | default('deploy failed') }}"

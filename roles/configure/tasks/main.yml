@@ -1,12 +1,17 @@
 - name: Configure host
   tags: ["config"]
   block:
-  # Create user account
+  # Create local accounts
+  - import_tasks: accounts.yml
+
+  # Configure SSH access
   - import_tasks: access.yml
 
   # Install Packages
-  # - import_tasks: apt.yml
+  - import_tasks: apt.yml
 
+  - import_tasks: pip.yml 
+  
   - name: Create directory for GPG keys
     tags: ["keyring"]
     ansible.builtin.file:
@@ -37,3 +42,12 @@
 
   # Install Docker 
   - import_tasks: docker.yml 
+
+  # Configure ansible-pull deployments
+  - import_tasks: ansible-pull.yml
+
+  # Install helper commands
+  - import_tasks: commands.yml
+
+  # Configure login message
+  - import_tasks: login-message.yml

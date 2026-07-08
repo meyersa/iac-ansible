@@ -3,11 +3,11 @@
   tags: ["swap"]
   block:
   - name: Disable swap for current session
-    command: swapoff -a
+    ansible.builtin.command: swapoff -a
     when: ansible_swaptotal_mb > 0
 
   - name: Disable swap permanently, persist reboots
-    replace:
+    ansible.builtin.replace:
       path: /etc/fstab
       regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
       replace: '#\1\2\3swap\4'

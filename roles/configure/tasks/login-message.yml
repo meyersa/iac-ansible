@@ -1,0 +1,22 @@
+---
+- name: Configure login message
+  tags: ["login-message", "commands"]
+  block:
+    - name: Check for Ubuntu unminimize MOTD message
+      ansible.builtin.stat:
+        path: /etc/update-motd.d/60-unminimize
+      register: unminimize_motd
+
+    - name: Disable Ubuntu unminimize MOTD message
+      ansible.builtin.file:
+        path: /etc/update-motd.d/60-unminimize
+        mode: "0644"
+      when: unminimize_motd.stat.exists
+
+    - name: Configure static MOTD
+      ansible.builtin.template:
+        src: motd.j2
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: "0644"

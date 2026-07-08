@@ -1,0 +1,9 @@
+---
+- name: Install Bitwarden Python SDK
+  tags: ["pip"]
+  block:
+    - name: Install BW SDK via pip
+      ansible.builtin.pip:
+        name: bitwarden-sdk
+        state: present
+        extra_args: "--break-system-packages"

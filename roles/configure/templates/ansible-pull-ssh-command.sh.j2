@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${SSH_ORIGINAL_COMMAND:-}" ]]; then
+  echo "Usage: ansible-pull branch:playbook[:downstream-branch]" >&2
+  exit 126
+fi
+
+read -r command unit_input extra <<<"$SSH_ORIGINAL_COMMAND"
+
+if [[ "$command" != "ansible-pull" ]] || [[ -z "${unit_input:-}" ]] || [[ -n "${extra:-}" ]]; then
+  echo "Only 'ansible-pull branch:playbook[:downstream-branch]' is allowed." >&2
+  exit 126
+fi
+
+if [[ ! "$unit_input" =~ ^[-A-Za-z0-9._/]+:[-A-Za-z0-9._/]+(:[-A-Za-z0-9._/]+)?$ ]] || [[ "$unit_input" == *..* ]] || [[ "$unit_input" == */.* ]]; then
+  echo "Invalid ansible-pull input: $unit_input" >&2
+  exit 2
+fi
+
+echo "Running ansible-pull $unit_input"
+exec sudo /usr/local/bin/ansible-pull-run "$unit_input"

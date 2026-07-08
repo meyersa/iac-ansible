@@ -27,5 +27,7 @@
           - cron
           - tcpdump
           - netcat-traditional
-        state: latest
+          - ansible
+        state: present
         update_cache: true
+        lock_timeout: 300

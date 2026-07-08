@@ -10,3 +10,14 @@
     name: ddclient-warp
     state: restarted
     enabled: true
+
+- name: restart docker
+  ansible.builtin.systemd:
+    name: docker.service
+    state: restarted
+    enabled: true
+
+- name: reload sshd
+  ansible.builtin.systemd:
+    name: ssh.service
+    state: reloaded

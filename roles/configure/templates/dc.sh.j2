@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: dc STACK DOCKER_COMPOSE_ARGS...
+
+Examples:
+  dc monitoring ps
+  dc monitoring logs -f grafana
+  dc monitoring up -d --force-recreate grafana
+  dc monitoring down -v
+USAGE
+}
+
+if [[ $# -lt 2 ]]; then
+  usage
+  exit 2
+fi
+
+stack="$1"
+shift
+
+if [[ ! "$stack" =~ ^[A-Za-z0-9._-]+$ ]] || [[ "$stack" == .* ]] || [[ "$stack" == *..* ]]; then
+  echo "Invalid stack name: $stack" >&2
+  exit 2
+fi
+
+compose_file="{{ CONFIG_DIR }}/compose/compose.${stack}.yml"
+
+if [[ ! -f "$compose_file" ]]; then
+  echo "Compose file not found: $compose_file" >&2
+  exit 1
+fi
+
+exec docker compose -f "$compose_file" "$@"

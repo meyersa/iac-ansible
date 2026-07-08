@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: ap PLAYBOOK [-b BRANCH] [-d DEPLOY_BRANCH]
+
+Examples:
+  ap configure
+  ap deploy -b main -d feature/branch
+  ap maintain -b main
+
+Options:
+  -b BRANCH         iac-ansible branch to run. Defaults to main.
+  -d DEPLOY_BRANCH iac-cd branch for deploy. Defaults to main.
+USAGE
+}
+
+branch="main"
+deploy_branch="main"
+playbook=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -b|--branch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1." >&2
+        usage
+        exit 2
+      fi
+      branch="${2:-}"
+      shift 2
+      ;;
+    -d|--deploy-branch|--downstream-branch)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for $1." >&2
+        usage
+        exit 2
+      fi
+      deploy_branch="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 2
+      ;;
+    *)
+      if [[ -n "$playbook" ]]; then
+        echo "Only one playbook can be specified." >&2
+        usage
+        exit 2
+      fi
+      playbook="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$playbook" ]] || [[ -z "$branch" ]] || [[ -z "$deploy_branch" ]]; then
+  usage
+  exit 2
+fi
+
+if [[ ! "$branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
+  echo "Invalid branch name: $branch" >&2
+  exit 2
+fi
+
+if [[ ! "$deploy_branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$deploy_branch" == .* ]] || [[ "$deploy_branch" == */.* ]] || [[ "$deploy_branch" == *..* ]]; then
+  echo "Invalid deploy branch name: $deploy_branch" >&2
+  exit 2
+fi
+
+if [[ "$playbook" == playbooks/* ]]; then
+  playbook="${playbook#playbooks/}"
+fi
+
+playbook="${playbook%.yml}"
+playbook="${playbook%.yaml}"
+
+if [[ ! "$playbook" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$playbook" == .* ]] || [[ "$playbook" == */.* ]] || [[ "$playbook" == *..* ]]; then
+  echo "Invalid playbook name: $playbook" >&2
+  exit 2
+fi
+
+unit_input="$branch:$playbook"
+if [[ "$playbook" == "deploy" ]]; then
+  unit_input="$unit_input:$deploy_branch"
+fi
+
+exec sudo /usr/local/bin/ansible-pull-run "$unit_input"

@@ -8,6 +8,7 @@
           - ufw
         state: present
         update_cache: true
+        lock_timeout: 300
 
     - name: UFW - Allow SSH connections
       community.general.ufw:

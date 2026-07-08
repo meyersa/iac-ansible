@@ -4,8 +4,8 @@ daemon=5m
 
 {{ DD_USE }}
 protocol=cloudflare, \
-zone={{ DDCLIENT_ZONE }}, \
+zone={{ lookup('bitwarden.secrets.lookup', DDCLIENT_ZONE) }}, \
 ttl=1, \
-login={{ DDCLIENT_EMAIL }}, \
-password={{ DDCLIENT_CF_GLOBAL_TOKEN }} \
-{{ DD_HOSTNAME }}.{{ DDCLIENT_ZONE }}
+login={{ lookup('bitwarden.secrets.lookup', DDCLIENT_EMAIL) }}, \
+password={{ lookup('bitwarden.secrets.lookup', DDCLIENT_CF_GLOBAL_TOKEN) }} \
+{{ DD_HOSTNAME }}.{{ lookup('bitwarden.secrets.lookup', DDCLIENT_ZONE) }}

@@ -2,61 +2,53 @@
 - name: Configure admin account and SSH Access
   tags: ["access"]
   block:
-    - name: Create an administrative user
-      user:
-        name: "{{ DEPLOY_USER }}"
-        shell: /bin/bash
-        comment: "Administrative User"
-        groups: sudo
-        append: yes 
-        
     - name: Create .ssh directory
-      file:
-        path: "/home/{{ DEPLOY_USER }}/.ssh"
+      ansible.builtin.file:
+        path: "/home/{{ bw_LOGIN_USER }}/.ssh"
         state: directory
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+        owner: "{{ bw_LOGIN_USER }}"
+        group: "{{ bw_LOGIN_USER }}"
         mode: "0700"
 
     - name: Fetch public keys from GitHub
-      uri:
-        url: "https://api.github.com/users/{{ GITHUB_USER }}/keys"
+      ansible.builtin.uri:
+        url: "https://api.github.com/users/meyersa/keys"
         return_content: yes
       register: github_keys
 
     - name: Ensure authorized_keys file exists
-      file:
-        path: "/home/{{ DEPLOY_USER }}/.ssh/authorized_keys"
-        state: file
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+      ansible.builtin.file:
+        path: "/home/{{ bw_LOGIN_USER }}/.ssh/authorized_keys"
+        state: touch
+        owner: "{{ bw_LOGIN_USER }}"
+        group: "{{ bw_LOGIN_USER }}"
         mode: "0600"
 
     - name: Add GitHub public keys to authorized_keys
-      lineinfile:
-        path: "/home/{{ DEPLOY_USER }}/.ssh/authorized_keys"
+      ansible.builtin.lineinfile:
+        path: "/home/{{ bw_LOGIN_USER }}/.ssh/authorized_keys"
         line: "{{ item.key }}"
         create: yes
-        owner: "{{ DEPLOY_USER }}"
-        group: "{{ DEPLOY_USER }}"
+        owner: "{{ bw_LOGIN_USER }}"
+        group: "{{ bw_LOGIN_USER }}"
         mode: "0600"
         state: present
       loop: "{{ github_keys.json }}"
 
     - name: Ensure sudoers file for admin user
-      copy:
-        dest: "/etc/sudoers.d/{{ DEPLOY_USER }}"
-        content: "{{ DEPLOY_USER }} ALL=(ALL) NOPASSWD:ALL"
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/{{ bw_LOGIN_USER }}"
+        content: "{{ bw_LOGIN_USER }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
     - name: Ensure sudoers file for ansible user
-      copy:
+      ansible.builtin.copy:
         dest: "/etc/sudoers.d/{{ ansible_user }}"
         content: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
     - name: Sync Ansible_user authorized keys
-      get_url:
+      ansible.builtin.get_url:
         url: "https://raw.githubusercontent.com/meyersa/ansible/main/ansible.pub"
         dest: "/home/{{ ansible_user }}/.ssh/authorized_keys"
         owner: "{{ ansible_user }}"
@@ -64,8 +56,9 @@
         mode: "0600"
 
     - name: Disable passwordless SSH authentication
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^#?PasswordAuthentication\s+yes'
         line: "PasswordAuthentication no"
         state: present
+      notify: reload sshd

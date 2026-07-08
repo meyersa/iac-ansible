@@ -1,12 +1,89 @@
 all:
   children:
-    application:
-      hosts:
-        prod:
+    oci:
+      vars: 
+        # Ansible
+        ansible_user: ubuntu
+        ansible_python_interpreter: /usr/bin/python3
+        LOGIN_USER: 776b6408-696a-4314-a1ef-b4450165c3d6
+        LOGIN_USER_ALIASES: 2c31e566-b29f-4a86-8489-b47e00f442e5
+        ansible_managed_group: ansible_managed
+        ansible_pull_actions_user: actions
+        ansible_pull_repo_url: https://github.com/meyersa/iac-ansible.git
+        ansible_pull_secrets_file: /etc/ansible-pull/bws_access_token
+        ansible_pull_skip_unchanged: false
+        ansible_pull_maintenance_enabled: true
+        ansible_pull_maintenance_branch: main
+        ansible_pull_maintenance_playbook: maintain
+        ansible_pull_maintenance_timer: "Mon *-*-* 01:00:00"
+        ansible_pull_maintenance_randomized_delay_sec: 30m
+        deploy_repo_url: https://github.com/meyersa/iac-cd.git
+        deploy_repo_branch: main
 
+        # Storage
+        CONFIG_DIR: /etc 
+        STATIC_DIR: /var/lib
+        DATA_DIR: /srv
+
+        # Warp
+        WARP_ID: 9aa48548-9c86-4b9f-81f8-b445017c8f03
+        WARP_SECRET: a4b808cb-9d5c-4b1c-aca8-b445017cb676
+        
+        # Crowdsec
+        CROWDSEC_API_URL: 3179598a-edf4-4b4c-8025-b44501746123
+        CROWDSEC_API_KEY: d9675bee-c354-4045-a4ce-b44501746e95
+        CROWDSEC_BOUNCER_KEY: 420d9fc9-1970-4373-b2fa-b445017ed39f
+        CROWDSEC_TOKEN: 15db87a1-06eb-43ea-9d97-b4460029ba05
+
+        # Maxmind 
+        ALLOY_MAXMIND_ID: 668730fa-077e-43ed-80db-b445017f5dee
+        ALLOY_MAXMIND_KEY: 7f1f9060-937a-4a4c-8da9-b445017f9a5c
+        
+        # DDClient
+        TLS_EMAIL: c85450b1-b9c9-49ce-b936-b445017a5f88
+        DDCLIENT_ZONE: 7a2ec819-1fc1-4b24-984a-b445017d0991
+        DDCLIENT_EMAIL: b4075465-91ec-4cb6-9c5c-b445017d3792
+        DDCLIENT_CF_GLOBAL_TOKEN: e2d33c7d-a423-482f-ae64-b445017d5558
+        DDCLIENT_API_KEY: edbb9ea8-4041-4902-81b2-b445017d6e3f
+
+        # App Setup
+        TL_OPENAI_KEY: ca3f0aae-5b53-485f-9243-b446002f5b38
+        TR_OPENAI_KEY: c6f9ba3b-b2fd-4bc7-97cf-b4460031524e
+
+        # Usernames
+        GF_USER: 43dc6e1e-9187-4972-a123-b446002aa21d
+        MONGO_USER: 440d3b55-1419-412f-af8d-b445017bbc1e
+        MIMIR_USER: 69030f94-ee2e-40c7-bfd5-b445017ad2df
+        LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
+
+      hosts:
         dev:
+          # IaC 
+          SSH_ACTIONS_PUBLIC_KEY: 3e963d80-a19c-4c7d-933b-b481001a1882
 
-    misc:
-      hosts:
-        jellyfin:
-        compute:
+          # Reqs 
+          CLOUDFLARED_TOKEN: a2d5aafc-3b8c-4a79-8251-b4450164f80b
+
+          # Notifications 
+          INFO_WEBHOOK_ID: 88e5841b-8207-46bb-b2b3-b4450175b475
+          INFO_WEBHOOK_TOKEN: 2353440d-bb81-4857-b192-b44501758a13
+          ERROR_WEBHOOK_ID: 79420251-13c9-4751-8eab-b4450176f954
+          ERROR_WEBHOOK_TOKEN: 911ef400-61ed-491e-9daf-b44501770bad
+
+          # Domains
+          FRONTEND_DOMAIN: 02953505-d628-4f67-bee8-b44501645699
+          BACKEND_DOMAIN: 8fa8caf5-49c3-47d1-95ef-b44501647935
+          
+          # Passwords
+          MONGO_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          GF_PASS: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TL_SERVER_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+          TR_API_KEY: 2e7e11ea-1540-4ffb-9fc3-b445017e01c3
+
+          # Alloy
+          MIMIR_PASS: f73de652-ebfe-4b29-ae49-b446000aed01
+          MIMIR_BCRYPT_PASS: f60464a4-2653-462b-bc79-b45a00358b2f
+          LOKI_PASS: efe65380-01cd-4919-b513-b446000b0c3c
+          LOKI_BCRYPT_PASS: 4c83f2a6-8a8e-4708-b3e6-b45a0035a0cb
+
+          GRAFANA_EDITABLE: true

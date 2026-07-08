@@ -102,7 +102,7 @@ prometheus.scrape "docker_metrics" {
 // Scrape Docker Engine
 prometheus.scrape "engine" {
   targets    = [{"__address__" = "localhost:9323"}]
-  job_name   = "{{ ALLOY_HOSTNAME }}"
+  job_name   = "{{ ansible_hostname }}"
   forward_to = [prometheus.remote_write.prom.receiver] 
 }
 
@@ -119,14 +119,14 @@ prometheus.exporter.self "default" {}
 
 prometheus.scrape "agent" {
   targets     = prometheus.exporter.self.default.targets
-  job_name    = "{{ ALLOY_HOSTNAME }}"
+  job_name    = "{{ ansible_hostname }}"
   forward_to  = [prometheus.remote_write.prom.receiver]
 }
 
 // Mongo Metrics
-{% if MONGO_SCRAPE|default(false) %}
+{% if MONGO_USER %}
 prometheus.exporter.mongodb "mongo" {
-  mongodb_uri = "mongodb://{{ MONGO_ROOT_USER }}:{{ MONGO_ROOT_PASS }}@localhost:27017"
+  mongodb_uri = "mongodb://{{ lookup('bitwarden.secrets.lookup', MONGO_USER) }}:{{ lookup('bitwarden.secrets.lookup', MONGO_PASS) }}@localhost:27017"
 }
 
 discovery.relabel "mongo_targets" {
@@ -143,11 +143,11 @@ prometheus.scrape "mongo" {
 // Remote Write
 prometheus.remote_write "prom" {
   endpoint {
-    url = "{{ ALLOY_MIMIR_URL }}"
+    url = "https://mimir.{{ lookup('bitwarden.secrets.lookup', BACKEND_DOMAIN) }}:8443/api/v1/push"
 
     basic_auth {
-      username = "{{ ALLOY_MIMIR_USER }}"
-      password = "{{ ALLOY_MIMIR_PASS }}"
+      username = "{{ lookup('bitwarden.secrets.lookup', MIMIR_USER) }}"
+      password = "{{ lookup('bitwarden.secrets.lookup', MIMIR_PASS) }}"
     }
   }
 }
@@ -155,7 +155,7 @@ prometheus.remote_write "prom" {
 // System logs
 loki.source.journal "default" {
   forward_to    = [loki.process.filter.receiver]
-  labels        = { job = "journalctl", instance = "{{ ALLOY_HOSTNAME }}" }
+  labels        = { job = "journalctl", instance = "{{ ansible_hostname }}" }
   relabel_rules = loki.relabel.journal.rules
 }
 
@@ -164,7 +164,7 @@ loki.source.docker "default" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.docker.containers.targets
   forward_to = [loki.process.filter.receiver]
-  labels     = { job = "docker", instance = "{{ ALLOY_HOSTNAME }}" }
+  labels     = { job = "docker", instance = "{{ ansible_hostname }}" }
   relabel_rules = loki.relabel.docker.rules
 }
 
@@ -328,11 +328,11 @@ loki.process "metrics" {
 
 loki.write "endpoint" {
   endpoint {
-    url = "{{ ALLOY_LOKI_URL }}"
+    url = "https://loki.{{ lookup('bitwarden.secrets.lookup', BACKEND_DOMAIN) }}:8443/loki/api/v1/push"
   
     basic_auth {
-      username = "{{ ALLOY_LOKI_USER }}"
-      password = "{{ ALLOY_LOKI_PASS }}"
+      username = "{{ lookup('bitwarden.secrets.lookup', LOKI_USER) }}"
+      password = "{{ lookup('bitwarden.secrets.lookup', LOKI_PASS) }}"
     }
   }
 }

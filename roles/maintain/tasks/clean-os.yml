@@ -9,9 +9,11 @@
       ansible.builtin.apt:
         autoremove: yes
         purge: true
+        lock_timeout: 360
       retries: 3 
 
     - name: Remove packages from local cache 
       ansible.builtin.apt:
         autoclean: yes
+        lock_timeout: 360
       retries: 3 
