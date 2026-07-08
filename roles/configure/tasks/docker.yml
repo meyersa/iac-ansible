@@ -12,7 +12,6 @@
       ansible.builtin.command: dpkg --print-architecture
       register: deb_architecture
       changed_when: false
-
     - name: Add Docker repository
       ansible.builtin.apt_repository:
         repo: >-
