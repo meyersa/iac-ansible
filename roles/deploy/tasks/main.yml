@@ -36,8 +36,27 @@
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_managed_group }}"
-        mode: "u=rwX,g=rwX,o="
+        mode: "u=rwX,g=rwX,o=rX"
         recurse: true
+
+    - name: Find restricted Compose files
+      ansible.builtin.find:
+        paths: "{{ CD_DIR }}"
+        patterns:
+          - "*compose*"
+          - "*env*"
+        file_type: file
+        recurse: true
+        hidden: true
+      register: restricted_compose_files
+
+    - name: Set restricted Compose file permissions
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_managed_group }}"
+        mode: "0660"
+      loop: "{{ restricted_compose_files.files }}"
 
     - name: Find templates
       ansible.builtin.find:
@@ -58,14 +77,15 @@
       loop: "{{ j2_files.files }}"
       register: rendered_templates
 
-    - name: Set rendered Compose resources ownership
+    - name: Set rendered Compose template ownership
       ansible.builtin.file:
-        path: "{{ CD_DIR }}"
-        state: directory
+        path: "{{ item.dest }}"
+        state: file
         owner: "{{ ansible_user }}"
         group: "{{ ansible_managed_group }}"
-        mode: "u=rwX,g=rwX,o="
-        recurse: true
+        mode: "{{ ((item.dest | basename) is search('env|compose')) | ternary('0660', '0664') }}"
+      loop: "{{ rendered_templates.results | default([]) }}"
+      when: item.dest is defined
 
     - name: Preserve Compose resources directory permissions
       ansible.builtin.file:
@@ -73,7 +93,7 @@
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_managed_group }}"
-        mode: "2770"
+        mode: "2775"
 
     - name: Find compose projects
       ansible.builtin.find:
