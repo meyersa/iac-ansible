@@ -19,7 +19,8 @@ all:
         ansible_pull_maintenance_randomized_delay_sec: 30m
         deploy_repo_url: https://github.com/meyersa/iac-cd.git
         deploy_repo_branch: main
-
+        GITHUB_BEARER: fe514b4a-83b4-4f59-b826-b481017a7cf7
+        
         # Storage
         CONFIG_DIR: /etc 
         STATIC_DIR: /var/lib

@@ -14,6 +14,9 @@
       ansible.builtin.uri:
         url: "https://api.github.com/users/meyersa/keys"
         return_content: yes
+        headers: 
+          Authorization: "Bearer {{ lookup('bitwarden.secrets.lookup', GITHUB_BEARER) }}"
+
       register: github_keys
 
     - name: Ensure authorized_keys file exists
@@ -54,6 +57,9 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: "0600"
+        headers: 
+          Authorization: "Bearer {{ lookup('bitwarden.secrets.lookup', GITHUB_BEARER) }}"
+
 
     - name: Disable passwordless SSH authentication
       ansible.builtin.lineinfile:
