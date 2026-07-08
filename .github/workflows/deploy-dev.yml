@@ -54,4 +54,4 @@ jobs:
         run: |
           set -euo pipefail
           branch_spec="${BRANCH_NAME}:configure"
-          ssh -v "${SSH_DEV_USER}@${SSH_DEV_HOST}" "ansible-pull $(printf '%q' "${branch_spec}")"
+          ssh "${SSH_DEV_USER}@${SSH_DEV_HOST}" "ansible-pull $(printf '%q' "${branch_spec}")"
