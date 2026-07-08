@@ -19,7 +19,8 @@ all:
         ansible_pull_maintenance_randomized_delay_sec: 30m
         deploy_repo_url: https://github.com/meyersa/iac-cd.git
         deploy_repo_branch: main
-
+        GITHUB_BEARER: fe514b4a-83b4-4f59-b826-b481017a7cf7
+        
         # Storage
         CONFIG_DIR: /etc 
         STATIC_DIR: /var/lib
@@ -57,6 +58,35 @@ all:
         LOKI_USER: b90b7c37-22d3-4d79-a28c-b445017b318d
 
       hosts:
+        prod:
+          # IaC 
+          SSH_ACTIONS_PUBLIC_KEY: 8f689bde-a3fd-49db-9a9a-b4810019959d
+
+          # Reqs 
+          CLOUDFLARED_TOKEN: a9d655cf-6bc7-4acb-a541-b481015ecaf8
+          
+          # Notifications 
+          INFO_WEBHOOK_ID: f2053dd8-8e51-49de-85c5-b4810161f538
+          INFO_WEBHOOK_TOKEN: 50207aff-255c-4618-9754-b481016208b2
+          ERROR_WEBHOOK_ID: f352c918-246e-496c-ae8c-b481016234da
+          ERROR_WEBHOOK_TOKEN: b7217407-a6f7-4c1c-9a69-b48101625a9b
+
+          # Domains
+          FRONTEND_DOMAIN: 39f6bf59-f65f-491e-836d-b481015f1f48
+          BACKEND_DOMAIN: ac42f7f7-658f-4d9f-a09b-b481015ef76a
+          
+          # Passwords
+          MONGO_PASS: 54a44302-c430-4e1a-a50c-b481015f5264
+          GF_PASS: f7c32e2c-0423-459a-a744-b481015fa4cc
+          TL_SERVER_KEY: b230d808-c18b-4351-a693-b481015fc647
+          TR_API_KEY: 9122d75c-c28c-4d26-8fb2-b481015fdfc3
+
+          # Alloy
+          MIMIR_PASS: fcf049c1-12ae-4727-8a7e-b48101603982
+          MIMIR_BCRYPT_PASS: 330643d4-a9e8-48b5-853c-b4810161044a
+          LOKI_PASS: e73afadc-e863-4e2b-91f1-b4810161364e
+          LOKI_BCRYPT_PASS: a0441ca7-490c-4092-a953-b4810161726b
+
         dev:
           # IaC 
           SSH_ACTIONS_PUBLIC_KEY: 3e963d80-a19c-4c7d-933b-b481001a1882

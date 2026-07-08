@@ -1,0 +1,57 @@
+---
+name: deploy-dev
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy. Defaults to the selected workflow branch."
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-dev-${{ github.event.pull_request.head.ref || inputs.branch || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-dev:
+    name: Deploy dev
+    runs-on: ubuntu-latest
+    env:
+      SSH_DEV_HOST: ${{ secrets.SSH_DEV_HOST }}
+      SSH_DEV_USER: ${{ secrets.SSH_DEV_USER }}
+      BRANCH_NAME: ${{ github.event.pull_request.head.ref || inputs.branch || github.ref_name }}
+
+    steps:
+      - name: Start SSH agent
+        env:
+          SSH_DEV_ACTIONS_PRIVATE_KEY: ${{ secrets.SSH_DEV_ACTIONS_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          eval "$(ssh-agent -s)"
+          ssh-add - <<<"${SSH_DEV_ACTIONS_PRIVATE_KEY}"
+          {
+            echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
+            echo "SSH_AGENT_PID=${SSH_AGENT_PID}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Trust dev host
+        run: |
+          set -euo pipefail
+          ssh-keyscan -H "${SSH_DEV_HOST}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Run dev configure
+        run: |
+          set -euo pipefail
+          branch_spec="${BRANCH_NAME}:configure"
+          ssh -v "${SSH_DEV_USER}@${SSH_DEV_HOST}" "ansible-pull $(printf '%q' "${branch_spec}")"
