@@ -75,6 +75,15 @@
         group: "{{ ansible_pull_actions_user }}"
         mode: "0600"
 
+    - name: Allow actions user to run ansible-pull wrapper
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/{{ ansible_pull_actions_user }}-ansible-pull"
+        content: "{{ ansible_pull_actions_user }} ALL=(root) NOPASSWD: /usr/local/bin/ansible-pull-run *\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s
+
     - name: Install ansible-pull systemd service
       ansible.builtin.template:
         src: ansible-pull@.service.j2

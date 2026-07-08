@@ -1,56 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-start_unit() {
-  local unit="$1"
-  local active_state
-  local exec_status
-  local invocation_id
-  local journal_pid=""
-  local result
-
-  systemctl reset-failed "$unit" >/dev/null 2>&1 || true
-  systemctl start --no-block "$unit"
-
-  for _ in {1..50}; do
-    invocation_id="$(systemctl show "$unit" --property=InvocationID --value 2>/dev/null || true)"
-    if [[ -n "$invocation_id" ]]; then
-      break
-    fi
-    sleep 0.1
-  done
-
-  if [[ -n "$invocation_id" ]]; then
-    journalctl _SYSTEMD_INVOCATION_ID="$invocation_id" --no-pager -o cat -f &
-  else
-    journalctl -u "$unit" -n 0 --no-pager -o cat -f &
-  fi
-  journal_pid="$!"
-
-  while true; do
-    active_state="$(systemctl show "$unit" --property=ActiveState --value 2>/dev/null || true)"
-    if [[ "$active_state" != "activating" && "$active_state" != "active" ]]; then
-      break
-    fi
-    sleep 0.5
-  done
-
-  if [[ -n "$journal_pid" ]]; then
-    sleep 0.2
-    kill "$journal_pid" >/dev/null 2>&1 || true
-    wait "$journal_pid" >/dev/null 2>&1 || true
-  fi
-
-  result="$(systemctl show "$unit" --property=Result --value 2>/dev/null || true)"
-  exec_status="$(systemctl show "$unit" --property=ExecMainStatus --value 2>/dev/null || true)"
-
-  if [[ "$result" == "success" && "${exec_status:-0}" == "0" ]]; then
-    return 0
-  fi
-
-  return "${exec_status:-1}"
-}
-
 if [[ -z "${SSH_ORIGINAL_COMMAND:-}" ]]; then
   echo "Usage: ansible-pull branch:playbook[:downstream-branch]" >&2
   exit 126
@@ -63,10 +13,10 @@ if [[ "$command" != "ansible-pull" ]] || [[ -z "${unit_input:-}" ]] || [[ -n "${
   exit 126
 fi
 
-if [[ ! "$unit_input" =~ ^[A-Za-z0-9._/-]+:[A-Za-z0-9._/-]+(:[A-Za-z0-9._/-]+)?$ ]] || [[ "$unit_input" == *..* ]] || [[ "$unit_input" == */.* ]]; then
+if [[ ! "$unit_input" =~ ^[-A-Za-z0-9._/]+:[-A-Za-z0-9._/]+(:[-A-Za-z0-9._/]+)?$ ]] || [[ "$unit_input" == *..* ]] || [[ "$unit_input" == */.* ]]; then
   echo "Invalid ansible-pull input: $unit_input" >&2
   exit 2
 fi
 
-unit="$(systemd-escape --template=ansible-pull@.service "$unit_input")"
-start_unit "$unit"
+echo "Running ansible-pull $unit_input"
+exec sudo /usr/local/bin/ansible-pull-run "$unit_input"

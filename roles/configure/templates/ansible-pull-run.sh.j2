@@ -28,12 +28,12 @@ if [[ -n "${extra:-}" ]] || [[ -z "$branch" ]] || [[ -z "$playbook" ]]; then
   exit 2
 fi
 
-if [[ ! "$branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
+if [[ ! "$branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
   echo "Invalid branch name: $branch" >&2
   exit 2
 fi
 
-if [[ ! "$downstream_branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$downstream_branch" == .* ]] || [[ "$downstream_branch" == */.* ]] || [[ "$downstream_branch" == *..* ]]; then
+if [[ ! "$downstream_branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$downstream_branch" == .* ]] || [[ "$downstream_branch" == */.* ]] || [[ "$downstream_branch" == *..* ]]; then
   echo "Invalid downstream branch name: $downstream_branch" >&2
   exit 2
 fi
@@ -44,7 +44,7 @@ if [[ "$playbook" != playbooks/* ]]; then
   playbook="playbooks/${playbook}.yml"
 fi
 
-if [[ ! "$playbook" =~ ^playbooks/[A-Za-z0-9._/-]+\.ya?ml$ ]] || [[ "$playbook" == *..* ]] || [[ "$playbook" == */.* ]]; then
+if [[ ! "$playbook" =~ ^playbooks/[-A-Za-z0-9._/]+\.ya?ml$ ]] || [[ "$playbook" == *..* ]] || [[ "$playbook" == */.* ]]; then
   echo "Invalid playbook path: $playbook" >&2
   exit 2
 fi

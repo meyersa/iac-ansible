@@ -66,12 +66,12 @@ if [[ -z "$playbook" ]] || [[ -z "$branch" ]] || [[ -z "$deploy_branch" ]]; then
   exit 2
 fi
 
-if [[ ! "$branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
+if [[ ! "$branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$branch" == .* ]] || [[ "$branch" == */.* ]] || [[ "$branch" == *..* ]]; then
   echo "Invalid branch name: $branch" >&2
   exit 2
 fi
 
-if [[ ! "$deploy_branch" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$deploy_branch" == .* ]] || [[ "$deploy_branch" == */.* ]] || [[ "$deploy_branch" == *..* ]]; then
+if [[ ! "$deploy_branch" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$deploy_branch" == .* ]] || [[ "$deploy_branch" == */.* ]] || [[ "$deploy_branch" == *..* ]]; then
   echo "Invalid deploy branch name: $deploy_branch" >&2
   exit 2
 fi
@@ -83,7 +83,7 @@ fi
 playbook="${playbook%.yml}"
 playbook="${playbook%.yaml}"
 
-if [[ ! "$playbook" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$playbook" == .* ]] || [[ "$playbook" == */.* ]] || [[ "$playbook" == *..* ]]; then
+if [[ ! "$playbook" =~ ^[-A-Za-z0-9._/]+$ ]] || [[ "$playbook" == .* ]] || [[ "$playbook" == */.* ]] || [[ "$playbook" == *..* ]]; then
   echo "Invalid playbook name: $playbook" >&2
   exit 2
 fi
