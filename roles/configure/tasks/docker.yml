@@ -30,7 +30,6 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
-        update_cache: true
         lock_timeout: 300
     
     - name: Configure Docker Daemon

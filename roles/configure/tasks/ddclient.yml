@@ -14,7 +14,6 @@
         name:
           - ddclient
         state: present
-        update_cache: true
         lock_timeout: 300
 
     - name: Copy public ddclient config
