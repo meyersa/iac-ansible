@@ -6,7 +6,7 @@ usage() {
 }
 
 input="${1:-}"
-skip_unchanged="{{ ansible_pull_skip_unchanged | ternary('true', 'false') }}"
+skip_unchanged="{{ ANSIBLE_PULL_SKIP_UNCHANGED | ternary('true', 'false') }}"
 
 if [[ -z "$input" ]] || [[ $# -gt 2 ]]; then
   usage
@@ -54,9 +54,9 @@ if [[ "$skip_unchanged" != "true" ]] && [[ "$skip_unchanged" != "false" ]]; then
   exit 2
 fi
 
-repo_url="{{ ansible_pull_repo_url }}"
-deploy_repo_url="{{ deploy_repo_url }}"
-token_file="{{ ansible_pull_secrets_file }}"
+repo_url="{{ ANSIBLE_PULL_REPO_URL }}"
+DEPLOY_REPO_URL="{{ DEPLOY_REPO_URL }}"
+token_file="{{ ANSIBLE_PULL_SECRETS_FILE }}"
 state_key="${branch//\//_}.${playbook//\//_}.${downstream_branch//\//_}"
 last_commit_file="/var/lib/ansible-pull/last-commit.$state_key"
 
@@ -78,10 +78,10 @@ if [[ "$skip_unchanged" == "true" ]]; then
   fi
 
   if [[ "$playbook" == "playbooks/deploy.yml" ]]; then
-    downstream_commit="$(git ls-remote "$deploy_repo_url" "refs/heads/$downstream_branch" | awk '{print $1}')"
+    downstream_commit="$(git ls-remote "$DEPLOY_REPO_URL" "refs/heads/$downstream_branch" | awk '{print $1}')"
 
     if [[ -z "$downstream_commit" ]]; then
-      echo "Unable to find downstream branch '$downstream_branch' in $deploy_repo_url" >&2
+      echo "Unable to find downstream branch '$downstream_branch' in $DEPLOY_REPO_URL" >&2
       exit 1
     fi
 
@@ -107,7 +107,7 @@ fi
 sudo -E ansible-pull \
   -U "$repo_url" \
   -C "$branch" \
-  -e "deploy_repo_branch=$downstream_branch" \
+  -e "DEPLOY_REPO_BRANCH=$downstream_branch" \
   -l "{{ inventory_hostname }}" \
   "$playbook"
 

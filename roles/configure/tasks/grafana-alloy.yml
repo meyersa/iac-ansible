@@ -25,7 +25,7 @@
     - name: Check if GeoLite2-City directory exists
       ansible.builtin.stat:
         path: "{{ ALLOY_DIR }}/GeoLite2-City.mmdb"
-      register: geoip_dir
+      register: GEOIP_DIR
 
     - name: Download GeoLite2-City database if not extracted
       ansible.builtin.get_url:
@@ -33,7 +33,7 @@
         dest: "/tmp/GeoLite2-City.tar.gz"
         username: "{{ lookup('bitwarden.secrets.lookup', ALLOY_MAXMIND_ID) }}"
         password: "{{ lookup('bitwarden.secrets.lookup', ALLOY_MAXMIND_KEY) }}"
-      when: not geoip_dir.stat.exists
+      when: not GEOIP_DIR.stat.exists
 
     - name: Extract GeoLite2-City database
       ansible.builtin.unarchive:
@@ -45,7 +45,7 @@
           - --strip-components=1
         include:
           - "*/GeoLite2-City.mmdb"
-      when: not geoip_dir.stat.exists
+      when: not GEOIP_DIR.stat.exists
 
     - name: Add Grafana's official GPG key
       ansible.builtin.apt_key:
@@ -65,7 +65,6 @@
         name:
           - alloy
         state: present
-        update_cache: true
         lock_timeout: 300
 
     - name: Enable and start Alloy

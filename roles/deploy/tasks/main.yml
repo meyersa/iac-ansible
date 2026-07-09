@@ -8,34 +8,34 @@
       ansible.builtin.file:
         path: "{{ CD_DIR }}"
         state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "2770"
 
     - name: Read trusted Git directories
       ansible.builtin.command: git config --system --get-all safe.directory
-      register: git_safe_directories
+      register: GIT_SAFE_DIRECTORIES
       changed_when: false
       failed_when: false
 
     - name: Trust Compose resources Git checkout
       ansible.builtin.command: "git config --system --add safe.directory {{ CD_DIR }}"
-      when: CD_DIR not in (git_safe_directories.stdout_lines | default([]))
+      when: CD_DIR not in (GIT_SAFE_DIRECTORIES.stdout_lines | default([]))
 
     - name: Clone IAC
       ansible.builtin.git:
-        repo: "{{ deploy_repo_url }}"
+        repo: "{{ DEPLOY_REPO_URL }}"
         dest: "{{ CD_DIR }}"
-        version: "{{ deploy_repo_branch }}"
+        version: "{{ DEPLOY_REPO_BRANCH }}"
         force: true
-      register: git_checkout
+      register: GIT_CHECKOUT
 
     - name: Set Compose resources ownership
       ansible.builtin.file:
         path: "{{ CD_DIR }}"
         state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "u=rwX,g=rwX,o=rX"
         recurse: true
 
@@ -48,15 +48,16 @@
         file_type: file
         recurse: true
         hidden: true
-      register: restricted_compose_files
+      register: RESTRICTED_COMPOSE_FILES
 
     - name: Set restricted Compose file permissions
       ansible.builtin.file:
         path: "{{ item.path }}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "0660"
-      loop: "{{ restricted_compose_files.files }}"
+      no_log: true
+      loop: "{{ RESTRICTED_COMPOSE_FILES.files }}"
 
     - name: Find templates
       ansible.builtin.find:
@@ -64,35 +65,37 @@
         patterns: "*.j2"
         recurse: true
         hidden: true
-      register: j2_files
+      register: J2_FILES
 
     - name: Render templates
       ansible.builtin.template:
         src: "{{ item.path }}"
         dest: "{{ item.path | regex_replace('\\.j2$', '') }}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "0660"
         force: true
-      loop: "{{ j2_files.files }}"
-      register: rendered_templates
+      loop: "{{ J2_FILES.files }}"
+      register: RENDERED_TEMPLATES
+      no_log: true
 
     - name: Set rendered Compose template ownership
       ansible.builtin.file:
         path: "{{ item.dest }}"
         state: file
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "{{ ((item.dest | basename) is search('env|compose')) | ternary('0660', '0664') }}"
-      loop: "{{ rendered_templates.results | default([]) }}"
+      loop: "{{ RENDERED_TEMPLATES.results | default([]) }}"
       when: item.dest is defined
+      no_log: true
 
     - name: Preserve Compose resources directory permissions
       ansible.builtin.file:
         path: "{{ CD_DIR }}"
         state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_managed_group }}"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ ANSIBLE_MANAGED_GROUP }}"
         mode: "2775"
 
     - name: Find compose projects
@@ -100,13 +103,13 @@
         paths: "{{ CD_DIR }}"
         file_type: directory
         depth: 1
-      register: project_dirs
+      register: PROJECT_DIRS
 
     - name: Build project list
       ansible.builtin.set_fact:
-        projects: >-
+        PROJECTS: >-
           {{
-            project_dirs.files
+            PROJECT_DIRS.files
             | map(attribute='path')
             | map('basename')
             | reject('search', '^\\.')
@@ -117,28 +120,28 @@
       ansible.builtin.command:
         cmd: git diff --name-only ORIG_HEAD HEAD
         chdir: "{{ CD_DIR }}"
-      register: git_changed_files
+      register: GIT_CHANGED_FILES
       changed_when: false
-      when: git_checkout.changed
+      when: GIT_CHECKOUT.changed
 
     - name: Map changed services
       ansible.builtin.set_fact:
-        changed_services: >-
-          {%- set out = [] -%}
-          {%- for f in (git_changed_files.stdout_lines | default([])) -%}
-            {%- for p in projects -%}
-              {%- if f.startswith(p ~ '/') -%}
-                {%- set rest = f.split('/', 2)[1:] | join('/') -%}
+        CHANGED_SERVICES: >-
+          {%- set OUT = [] -%}
+          {%- for F in (GIT_CHANGED_FILES.stdout_lines | default([])) -%}
+            {%- for P in PROJECTS -%}
+              {%- if F.startswith(P ~ '/') -%}
+                {%- set REST = F.split('/', 2)[1:] | join('/') -%}
 
                 {# service folder change #}
-                {%- if '/' in rest -%}
-                  {%- set svc = rest.split('/')[0] -%}
-                  {%- set _ = out.append(p ~ ':' ~ svc) -%}
+                {%- if '/' in REST -%}
+                  {%- set SVC = REST.split('/')[0] -%}
+                  {%- set _ = OUT.append(P ~ ':' ~ SVC) -%}
                 {%- endif -%}
               {%- endif -%}
             {%- endfor -%}
           {%- endfor -%}
-          {{ out | unique }}
+          {{ OUT | unique }}
 
     - name: Baseline compose up (all projects)
       ansible.builtin.command:
@@ -146,30 +149,30 @@
           docker compose
           -f {{ CD_DIR }}/compose.{{ item }}.yml
           up -d --remove-orphans
-      loop: "{{ projects }}"
-      register: baseline_up
+      loop: "{{ PROJECTS }}"
+      register: BASELINE_UP
 
     - name: Collect baseline Compose output
       ansible.builtin.set_fact:
-        baseline_compose_output: >-
-          {%- set out = [] -%}
-          {%- for result in (baseline_up.results | default([])) -%}
-            {%- set _ = out.append(result.stdout | default('')) -%}
-            {%- set _ = out.append(result.stderr | default('')) -%}
+        BASELINE_COMPOSE_OUTPUT: >-
+          {%- set OUT = [] -%}
+          {%- for RESULT in (BASELINE_UP.results | default([])) -%}
+            {%- set _ = OUT.append(RESULT.stdout | default('')) -%}
+            {%- set _ = OUT.append(RESULT.stderr | default('')) -%}
           {%- endfor -%}
-          {{ out | join('\n') }}
+          {{ OUT | join('\n') }}
 
     - name: Collect changed containers from baseline
       ansible.builtin.set_fact:
-        baseline_changed_containers: >-
+        BASELINE_CHANGED_CONTAINERS: >-
           {{
             ((
-                baseline_compose_output
+                BASELINE_COMPOSE_OUTPUT
                 | regex_findall('(?m)^\s*Container\s+(\S+)\s+(?:Create|Created|Creating|Recreate|Recreated|Recreating|Restart|Restarted|Restarting|Start|Started|Starting|Remove|Removed|Removing)\b')
               )
               +
               (
-                baseline_compose_output
+                BASELINE_COMPOSE_OUTPUT
                 | regex_findall('(?m)^\s*(?:Creating|Recreating|Starting|Restarting|Removing)\s+(\S+)')
               ))
             | unique
@@ -178,7 +181,7 @@
 
     - name: Track baseline recreated containers
       ansible.builtin.set_fact:
-        baseline_recreated: "{{ baseline_changed_containers }}"
+        BASELINE_RECREATED: "{{ BASELINE_CHANGED_CONTAINERS }}"
 
     - name: Force recreate impacted services (excluding baseline ones)
       ansible.builtin.command:
@@ -186,33 +189,33 @@
           docker compose
           -f {{ CD_DIR }}/compose.{{ item.split(':')[0] }}.yml
           up -d --force-recreate {{ item.split(':')[1] }}
-      loop: "{{ changed_services }}"
-      register: force_recreate
+      loop: "{{ CHANGED_SERVICES }}"
+      register: FORCE_RECREATE
       when:
-        - changed_services | length > 0
-        - (baseline_recreated | select('search', item.split(':')[1]) | list | length) == 0
+        - CHANGED_SERVICES | length > 0
+        - (BASELINE_RECREATED | select('search', item.split(':')[1]) | list | length) == 0
 
     - name: Collect force recreate Compose output
       ansible.builtin.set_fact:
-        force_recreate_compose_output: >-
-          {%- set out = [] -%}
-          {%- for result in (force_recreate.results | default([])) -%}
-            {%- set _ = out.append(result.stdout | default('')) -%}
-            {%- set _ = out.append(result.stderr | default('')) -%}
+        FORCE_RECREATE_COMPOSE_OUTPUT: >-
+          {%- set OUT = [] -%}
+          {%- for RESULT in (FORCE_RECREATE.results | default([])) -%}
+            {%- set _ = OUT.append(RESULT.stdout | default('')) -%}
+            {%- set _ = OUT.append(RESULT.stderr | default('')) -%}
           {%- endfor -%}
-          {{ out | join('\n') }}
+          {{ OUT | join('\n') }}
 
     - name: Collect changed containers from force recreate
       ansible.builtin.set_fact:
-        force_recreated_containers: >-
+        FORCE_RECREATED_CONTAINERS: >-
           {{
             ((
-                force_recreate_compose_output
+                FORCE_RECREATE_COMPOSE_OUTPUT
                 | regex_findall('(?m)^\s*Container\s+(\S+)\s+(?:Create|Created|Creating|Recreate|Recreated|Recreating|Restart|Restarted|Restarting|Start|Started|Starting|Remove|Removed|Removing)\b')
               )
               +
               (
-                force_recreate_compose_output
+                FORCE_RECREATE_COMPOSE_OUTPUT
                 | regex_findall('(?m)^\s*(?:Creating|Recreating|Starting|Restarting|Removing)\s+(\S+)')
               ))
             | unique
@@ -221,4 +224,4 @@
 
     - name: Publish changed containers
       ansible.builtin.set_fact:
-        deploy_changed_containers: "{{ ((baseline_changed_containers | default([])) + (force_recreated_containers | default([]))) | unique | list }}"
+        DEPLOY_CHANGED_CONTAINERS: "{{ ((BASELINE_CHANGED_CONTAINERS | default([])) + (FORCE_RECREATED_CONTAINERS | default([]))) | unique | list }}"

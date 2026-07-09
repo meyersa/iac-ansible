@@ -3,17 +3,17 @@
   hosts: all 
   become: true 
   vars: 
-    reboot: false 
+    REBOOT: false 
   tasks:
     - name: Send maintenance start webhook
       ansible.builtin.include_role:
         name: utility
         tasks_from: webhook
       vars:
-        webhook_status: success
-        webhook_title: "Maintenance started"
-        webhook_description: "Starting maintenance on {{ inventory_hostname }}"
-        webhook_fields:
+        WEBHOOK_STATUS: success
+        WEBHOOK_TITLE: "Maintenance started"
+        WEBHOOK_DESCRIPTION: "Starting maintenance on {{ inventory_hostname }}"
+        WEBHOOK_FIELDS:
           - name: Host
             value: "{{ inventory_hostname }}"
             inline: true
@@ -32,11 +32,11 @@
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: success
-            webhook_title: "Maintenance finished"
-            webhook_description: "Finished maintenance on {{ inventory_hostname }}"
-            webhook_color: 3066993
-            webhook_fields:
+            WEBHOOK_STATUS: success
+            WEBHOOK_TITLE: "Maintenance finished"
+            WEBHOOK_DESCRIPTION: "Finished maintenance on {{ inventory_hostname }}"
+            WEBHOOK_COLOR: 3066993
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true
@@ -44,7 +44,7 @@
                 value: maintain
                 inline: true
               - name: Reboot requested
-                value: "{{ reboot | bool | string }}"
+                value: "{{ REBOOT | bool | string }}"
                 inline: true
 
         - name: Reboot host if requested
@@ -52,17 +52,17 @@
           async: 1
           poll: 0
           changed_when: true
-          when: reboot | bool
+          when: REBOOT | bool
       rescue:
         - name: Send maintenance failure webhook
           ansible.builtin.include_role:
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: failed
-            webhook_title: "Maintenance failed"
-            webhook_description: "Maintenance failed on {{ inventory_hostname }}"
-            webhook_fields:
+            WEBHOOK_STATUS: failed
+            WEBHOOK_TITLE: "Maintenance failed"
+            WEBHOOK_DESCRIPTION: "Maintenance failed on {{ inventory_hostname }}"
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true

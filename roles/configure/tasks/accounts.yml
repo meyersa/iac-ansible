@@ -4,63 +4,63 @@
   block:
     - name: Get login user from BW
       ansible.builtin.set_fact:
-        bw_LOGIN_USER: "{{ lookup('bitwarden.secrets.lookup', LOGIN_USER) }}"
+        BW_LOGIN_USER: "{{ lookup('bitwarden.secrets.lookup', LOGIN_USER) }}"
 
     - name: Get login user aliases from BW
       ansible.builtin.set_fact:
-        LOGIN_USER_aliases: >-
+        BW_LOGIN_USER_ALIASES: >-
           {{
             lookup('bitwarden.secrets.lookup', LOGIN_USER_ALIASES)
             | default('', true)
             | split(',')
             | map('trim')
             | reject('equalto', '')
-            | reject('equalto', bw_LOGIN_USER)
+            | reject('equalto', BW_LOGIN_USER)
             | list
           }}
 
     - name: Create Ansible managed resources group
       ansible.builtin.group:
-        name: "{{ ansible_managed_group }}"
+        name: "{{ ANSIBLE_MANAGED_GROUP }}"
         state: present
 
     - name: Add Ansible user to managed resources group
       ansible.builtin.user:
-        name: "{{ ansible_user }}"
-        groups: "{{ ansible_managed_group }}"
+        name: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        groups: "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
 
     - name: Create login user
       ansible.builtin.user:
-        name: "{{ bw_LOGIN_USER }}"
+        name: "{{ BW_LOGIN_USER }}"
         shell: /bin/bash
         comment: "Login User"
         groups:
           - sudo
-          - "{{ ansible_managed_group }}"
+          - "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
 
     - name: Read login user account details
       ansible.builtin.getent:
         database: passwd
-        key: "{{ bw_LOGIN_USER }}"
+        key: "{{ BW_LOGIN_USER }}"
 
     - name: Create login user aliases
       ansible.builtin.user:
         name: "{{ item }}"
-        uid: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][1] }}"
-        group: "{{ bw_LOGIN_USER }}"
-        home: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][4] }}"
-        shell: "{{ ansible_facts.getent_passwd[bw_LOGIN_USER][5] }}"
-        comment: "Login User Alias for {{ bw_LOGIN_USER }}"
+        uid: "{{ ansible_facts.getent_passwd[BW_LOGIN_USER][1] }}"
+        group: "{{ BW_LOGIN_USER }}"
+        home: "{{ ansible_facts.getent_passwd[BW_LOGIN_USER][4] }}"
+        shell: "{{ ansible_facts.getent_passwd[BW_LOGIN_USER][5] }}"
+        comment: "Login User Alias for {{ BW_LOGIN_USER }}"
         non_unique: true
         create_home: false
         password_lock: true
         groups:
           - sudo
-          - "{{ ansible_managed_group }}"
+          - "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
-      loop: "{{ LOGIN_USER_aliases }}"
+      loop: "{{ BW_LOGIN_USER_ALIASES }}"
 
     - name: Create Alloy service account
       ansible.builtin.user:
@@ -72,7 +72,7 @@
 
     - name: Create actions service account
       ansible.builtin.user:
-        name: "{{ ansible_pull_actions_user }}"
+        name: "{{ ANSIBLE_PULL_ACTIONS_USER }}"
         shell: /bin/bash
         comment: "Actions Service Account"
         create_home: true

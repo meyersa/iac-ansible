@@ -4,10 +4,10 @@
   block:
     - name: Create .ssh directory
       ansible.builtin.file:
-        path: "/home/{{ bw_LOGIN_USER }}/.ssh"
+        path: "/home/{{ BW_LOGIN_USER }}/.ssh"
         state: directory
-        owner: "{{ bw_LOGIN_USER }}"
-        group: "{{ bw_LOGIN_USER }}"
+        owner: "{{ BW_LOGIN_USER }}"
+        group: "{{ BW_LOGIN_USER }}"
         mode: "0700"
 
     - name: Fetch public keys from GitHub
@@ -17,45 +17,45 @@
         headers: 
           Authorization: "Bearer {{ lookup('bitwarden.secrets.lookup', GITHUB_BEARER) }}"
 
-      register: github_keys
+      register: GITHUB_KEYS
 
     - name: Ensure authorized_keys file exists
       ansible.builtin.file:
-        path: "/home/{{ bw_LOGIN_USER }}/.ssh/authorized_keys"
+        path: "/home/{{ BW_LOGIN_USER }}/.ssh/authorized_keys"
         state: touch
-        owner: "{{ bw_LOGIN_USER }}"
-        group: "{{ bw_LOGIN_USER }}"
+        owner: "{{ BW_LOGIN_USER }}"
+        group: "{{ BW_LOGIN_USER }}"
         mode: "0600"
 
     - name: Add GitHub public keys to authorized_keys
       ansible.builtin.lineinfile:
-        path: "/home/{{ bw_LOGIN_USER }}/.ssh/authorized_keys"
+        path: "/home/{{ BW_LOGIN_USER }}/.ssh/authorized_keys"
         line: "{{ item.key }}"
         create: yes
-        owner: "{{ bw_LOGIN_USER }}"
-        group: "{{ bw_LOGIN_USER }}"
+        owner: "{{ BW_LOGIN_USER }}"
+        group: "{{ BW_LOGIN_USER }}"
         mode: "0600"
         state: present
-      loop: "{{ github_keys.json }}"
+      loop: "{{ GITHUB_KEYS.json }}"
 
     - name: Ensure sudoers file for admin user
       ansible.builtin.copy:
-        dest: "/etc/sudoers.d/{{ bw_LOGIN_USER }}"
-        content: "{{ bw_LOGIN_USER }} ALL=(ALL) NOPASSWD:ALL"
+        dest: "/etc/sudoers.d/{{ BW_LOGIN_USER }}"
+        content: "{{ BW_LOGIN_USER }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
-    - name: Ensure sudoers file for ansible user
+    - name: Ensure sudoers file for remote user
       ansible.builtin.copy:
-        dest: "/etc/sudoers.d/{{ ansible_user }}"
-        content: "{{ ansible_user }} ALL=(ALL) NOPASSWD:ALL"
+        dest: "/etc/sudoers.d/{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        content: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }} ALL=(ALL) NOPASSWD:ALL"
         mode: "0440"
 
-    - name: Sync Ansible_user authorized keys
+    - name: Sync remote user authorized keys
       ansible.builtin.get_url:
         url: "https://raw.githubusercontent.com/meyersa/ansible/main/ansible.pub"
-        dest: "/home/{{ ansible_user }}/.ssh/authorized_keys"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
+        dest: "/home/{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}/.ssh/authorized_keys"
+        owner: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
+        group: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
         mode: "0600"
         headers: 
           Authorization: "Bearer {{ lookup('bitwarden.secrets.lookup', GITHUB_BEARER) }}"

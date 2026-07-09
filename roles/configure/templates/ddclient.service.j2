@@ -1,14 +1,14 @@
 [Unit]
 Documentation=man:ddclient(8)
-Description=DDClient ({{ dd_file }})
+Description=DDClient ({{ DD_FILE }})
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=forking
-PIDFile=/run/ddclient-{{ dd_file | basename | replace('.conf', '') }}.pid
+PIDFile=/run/ddclient-{{ DD_FILE | basename | replace('.conf', '') }}.pid
 Environment=daemon_interval=5m
-ExecStart=/usr/bin/ddclient -daemon $daemon_interval -syslog -file {{ dd_file }} -pid /run/ddclient-{{ dd_file | basename | replace('.conf', '') }}.pid
+ExecStart=/usr/bin/ddclient -daemon $daemon_interval -syslog -file {{ DD_FILE }} -pid /run/ddclient-{{ DD_FILE | basename | replace('.conf', '') }}.pid
 Restart=on-failure
 
 [Install]
