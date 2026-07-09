@@ -8,10 +8,10 @@
         name: utility
         tasks_from: webhook
       vars:
-        webhook_status: success
-        webhook_title: "Deploy started"
-        webhook_description: "Starting deploy on {{ inventory_hostname }}"
-        webhook_fields:
+        WEBHOOK_STATUS: success
+        WEBHOOK_TITLE: "Deploy started"
+        WEBHOOK_DESCRIPTION: "Starting deploy on {{ inventory_hostname }}"
+        WEBHOOK_FIELDS:
           - name: Host
             value: "{{ inventory_hostname }}"
             inline: true
@@ -30,11 +30,11 @@
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: success
-            webhook_title: "Deploy finished"
-            webhook_description: "Finished deploy on {{ inventory_hostname }}"
-            webhook_color: 3066993
-            webhook_fields:
+            WEBHOOK_STATUS: success
+            WEBHOOK_TITLE: "Deploy finished"
+            WEBHOOK_DESCRIPTION: "Finished deploy on {{ inventory_hostname }}"
+            WEBHOOK_COLOR: 3066993
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true
@@ -42,7 +42,7 @@
                 value: deploy
                 inline: true
               - name: Changed containers
-                value: "{{ (deploy_changed_containers | default([]) | length > 0) | ternary((deploy_changed_containers | join('\n') | truncate(900, true)), 'none') }}"
+                value: "{{ (DEPLOY_CHANGED_CONTAINERS | default([]) | length > 0) | ternary((DEPLOY_CHANGED_CONTAINERS | join('\n') | truncate(900, true)), 'none') }}"
                 inline: false
       rescue:
         - name: Send deploy failure webhook
@@ -50,10 +50,10 @@
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: failed
-            webhook_title: "Deploy failed"
-            webhook_description: "Deploy failed on {{ inventory_hostname }}"
-            webhook_fields:
+            WEBHOOK_STATUS: failed
+            WEBHOOK_TITLE: "Deploy failed"
+            WEBHOOK_DESCRIPTION: "Deploy failed on {{ inventory_hostname }}"
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true

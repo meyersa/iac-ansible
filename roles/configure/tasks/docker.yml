@@ -10,12 +10,12 @@
 
     - name: Get DEB architecture
       ansible.builtin.command: dpkg --print-architecture
-      register: deb_architecture
+      register: DEB_ARCHITECTURE
       changed_when: false
     - name: Add Docker repository
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch={{ deb_architecture.stdout }}
+          deb [arch={{ DEB_ARCHITECTURE.stdout }}
           signed-by=/etc/apt/keyrings/docker.gpg]
           https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
         filename: docker
@@ -56,10 +56,10 @@
 
     - name: Add ansible to Docker group
       ansible.builtin.user:
-        name: "{{ ansible_user }}"
+        name: "{{ lookup('ansible.builtin.config', 'DEFAULT_REMOTE_USER') }}"
         groups:
           - docker
-          - "{{ ansible_managed_group }}"
+          - "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
 
     - name: Add alloy to Docker group
@@ -70,10 +70,10 @@
 
     - name: Add generic user to Docker group
       ansible.builtin.user:
-        name: "{{ bw_LOGIN_USER }}"
+        name: "{{ BW_LOGIN_USER }}"
         groups:
           - docker
-          - "{{ ansible_managed_group }}"
+          - "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
 
     - name: Add login user aliases to Docker group
@@ -81,9 +81,9 @@
         name: "{{ item }}"
         groups:
           - docker
-          - "{{ ansible_managed_group }}"
+          - "{{ ANSIBLE_MANAGED_GROUP }}"
         append: true
-      loop: "{{ LOGIN_USER_aliases | default([]) }}"
+      loop: "{{ BW_LOGIN_USER_ALIASES | default([]) }}"
 
     - name: Enable and start containerd
       ansible.builtin.systemd:

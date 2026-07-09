@@ -14,9 +14,9 @@
           owner: root
           group: root
           mode: "0755"
-        - path: "/home/{{ ansible_pull_actions_user }}/.ssh"
-          owner: "{{ ansible_pull_actions_user }}"
-          group: "{{ ansible_pull_actions_user }}"
+        - path: "/home/{{ ANSIBLE_PULL_ACTIONS_USER }}/.ssh"
+          owner: "{{ ANSIBLE_PULL_ACTIONS_USER }}"
+          group: "{{ ANSIBLE_PULL_ACTIONS_USER }}"
           mode: "0700"
         - path: /etc/polkit-1/rules.d
           owner: root
@@ -25,7 +25,7 @@
 
     - name: Secure ansible-pull secrets file
       ansible.builtin.file:
-        path: "{{ ansible_pull_secrets_file }}"
+        path: "{{ ANSIBLE_PULL_SECRETS_FILE }}"
         state: file
         owner: root
         group: root
@@ -49,7 +49,7 @@
 
     - name: Build actions authorized keys
       ansible.builtin.set_fact:
-        ansible_pull_actions_authorized_keys: >-
+        ANSIBLE_PULL_ACTIONS_AUTHORIZED_KEYS: >-
           {{
             (
               [lookup('ansible.builtin.file', playbook_dir ~ '/../ansible.pub')]
@@ -66,19 +66,19 @@
 
     - name: Allow actions user SSH key to trigger only ansible-pull jobs
       ansible.builtin.copy:
-        dest: "/home/{{ ansible_pull_actions_user }}/.ssh/authorized_keys"
+        dest: "/home/{{ ANSIBLE_PULL_ACTIONS_USER }}/.ssh/authorized_keys"
         content: |
-          {% for actions_key in ansible_pull_actions_authorized_keys %}
-          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty {{ actions_key }}
+          {% for ACTIONS_KEY in ANSIBLE_PULL_ACTIONS_AUTHORIZED_KEYS %}
+          command="/usr/local/bin/ansible-pull-ssh-command",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty {{ ACTIONS_KEY }}
           {% endfor %}
-        owner: "{{ ansible_pull_actions_user }}"
-        group: "{{ ansible_pull_actions_user }}"
+        owner: "{{ ANSIBLE_PULL_ACTIONS_USER }}"
+        group: "{{ ANSIBLE_PULL_ACTIONS_USER }}"
         mode: "0600"
 
     - name: Allow actions user to run ansible-pull wrapper
       ansible.builtin.copy:
-        dest: "/etc/sudoers.d/{{ ansible_pull_actions_user }}-ansible-pull"
-        content: "{{ ansible_pull_actions_user }} ALL=(root) NOPASSWD: /usr/local/bin/ansible-pull-run *\n"
+        dest: "/etc/sudoers.d/{{ ANSIBLE_PULL_ACTIONS_USER }}-ansible-pull"
+        content: "{{ ANSIBLE_PULL_ACTIONS_USER }} ALL=(root) NOPASSWD: /usr/local/bin/ansible-pull-run *\n"
         owner: root
         group: root
         mode: "0440"
@@ -114,6 +114,6 @@
 
     - name: Enable scheduled maintenance ansible-pull timer
       ansible.builtin.systemd_service:
-        name: "ansible-pull@{{ ansible_pull_maintenance_branch }}:{{ ansible_pull_maintenance_playbook }}.timer"
-        enabled: "{{ ansible_pull_maintenance_enabled }}"
-        state: "{{ ansible_pull_maintenance_enabled | ternary('started', 'stopped') }}"
+        name: "ansible-pull@{{ ANSIBLE_PULL_MAINTENANCE_BRANCH }}:{{ ANSIBLE_PULL_MAINTENANCE_PLAYBOOK }}.timer"
+        enabled: "{{ ANSIBLE_PULL_MAINTENANCE_ENABLED }}"
+        state: "{{ ANSIBLE_PULL_MAINTENANCE_ENABLED | ternary('started', 'stopped') }}"

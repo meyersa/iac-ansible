@@ -40,7 +40,7 @@
         src: ddclient.service.j2
         dest: /etc/systemd/system/ddclient-pub.service
       vars: 
-        dd_file: "/etc/ddclient-pub.conf"
+        DD_FILE: "/etc/ddclient-pub.conf"
       notify: restart ddclient pub
 
     - name: Copy warp ddclient service 
@@ -48,7 +48,7 @@
         src: ddclient.service.j2
         dest: /etc/systemd/system/ddclient-warp.service
       vars: 
-        dd_file: "/etc/ddclient-warp.conf"
+        DD_FILE: "/etc/ddclient-warp.conf"
       notify: restart ddclient warp
 
     - name: Set permissions for ddclient-pub config file

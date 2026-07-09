@@ -33,7 +33,7 @@
         src: warp-svc.service
         dest: /lib/systemd/system/warp-svc.service
         mode: '0644'
-      register: warp_svc_service_result
+      register: WARP_SVC_SERVICE_RESULT
 
     - name: Copy the Cloudflare Warp check script
       ansible.builtin.copy:
@@ -46,18 +46,18 @@
         src: warp-check.service
         dest: /lib/systemd/system/warp-check.service
         mode: '0644'
-      register: warp_check_service_result
+      register: WARP_CHECK_SERVICE_RESULT
 
     - name: Copy the Cloudflare Warp check timer file
       ansible.builtin.copy:
         src: warp-check.timer
         dest: /lib/systemd/system/warp-check.timer
         mode: '0644'
-      register: warp_check_timer_result
+      register: WARP_CHECK_TIMER_RESULT
 
     - name: Reload systemd daemon if service or timer files changed
       ansible.builtin.command: systemctl daemon-reload
-      when: warp_svc_service_result.changed or warp_check_service_result.changed or warp_check_timer_result.changed
+      when: WARP_SVC_SERVICE_RESULT.changed or WARP_CHECK_SERVICE_RESULT.changed or WARP_CHECK_TIMER_RESULT.changed
 
     - name: Enable and start Warp
       ansible.builtin.systemd:
@@ -73,13 +73,13 @@
 
     - name: Run warp-cli and register the output
       ansible.builtin.command: warp-cli --accept-tos status
-      register: warp_cli_output
+      register: WARP_CLI_OUTPUT
       retries: 3 
       changed_when: false
 
     - name: Run warp-cli registration if needed
       ansible.builtin.command: warp-cli --accept-tos registration new
-      when: warp_cli_output.stdout_lines[0] == "Registration Missing"
+      when: WARP_CLI_OUTPUT.stdout_lines[0] == "Registration Missing"
 
     - name: Connect Warp
       ansible.builtin.command: warp-cli --accept-tos connect

@@ -1,24 +1,24 @@
 ---
 - name: Post webhook
   ansible.builtin.uri:
-    url: "https://discord.com/api/webhooks/{{ lookup('bitwarden.secrets.lookup', webhook_id_secret) }}/{{ lookup('bitwarden.secrets.lookup', webhook_token_secret) }}"
+    url: "https://discord.com/api/webhooks/{{ lookup('bitwarden.secrets.lookup', WEBHOOK_ID_SECRET) }}/{{ lookup('bitwarden.secrets.lookup', WEBHOOK_TOKEN_SECRET) }}"
     method: POST
     body_format: json
     status_code: 204
     body:
-      username: "{{ webhook_username }}"
-      avatar_url: "{{ webhook_avatar_url }}"
+      username: "{{ WEBHOOK_USERNAME }}"
+      avatar_url: "{{ WEBHOOK_AVATAR_URL }}"
       embeds:
-        - title: "{{ webhook_title | default(webhook_default_title) }}"
-          description: "{{ webhook_description | default('') }}"
-          color: "{{ webhook_color | default(webhook_default_color) }}"
-          fields: "{{ webhook_fields | default([]) }}"
+        - title: "{{ WEBHOOK_TITLE | default(WEBHOOK_DEFAULT_TITLE) }}"
+          description: "{{ WEBHOOK_DESCRIPTION | default('') }}"
+          color: "{{ WEBHOOK_COLOR | default(WEBHOOK_DEFAULT_COLOR) }}"
+          fields: "{{ WEBHOOK_FIELDS | default([]) }}"
   vars:
-    webhook_status_effective: "{{ webhook_status | default('success') }}"
-    webhook_id_secret: "{{ ERROR_WEBHOOK_ID if webhook_status_effective == 'failed' else INFO_WEBHOOK_ID }}"
-    webhook_token_secret: "{{ ERROR_WEBHOOK_TOKEN if webhook_status_effective == 'failed' else INFO_WEBHOOK_TOKEN }}"
-    webhook_default_color: "{{ 15158332 if webhook_status_effective == 'failed' else 3447003 }}"
-    webhook_default_title: "{{ 'Ansible error' if webhook_status_effective == 'failed' else 'Ansible info' }}"
+    WEBHOOK_STATUS_EFFECTIVE: "{{ WEBHOOK_STATUS | default('success') }}"
+    WEBHOOK_ID_SECRET: "{{ ERROR_WEBHOOK_ID if WEBHOOK_STATUS_EFFECTIVE == 'failed' else INFO_WEBHOOK_ID }}"
+    WEBHOOK_TOKEN_SECRET: "{{ ERROR_WEBHOOK_TOKEN if WEBHOOK_STATUS_EFFECTIVE == 'failed' else INFO_WEBHOOK_TOKEN }}"
+    WEBHOOK_DEFAULT_COLOR: "{{ 15158332 if WEBHOOK_STATUS_EFFECTIVE == 'failed' else 3447003 }}"
+    WEBHOOK_DEFAULT_TITLE: "{{ 'Ansible error' if WEBHOOK_STATUS_EFFECTIVE == 'failed' else 'Ansible info' }}"
   delegate_to: localhost
   become: false
   no_log: true

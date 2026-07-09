@@ -1,4 +1,4 @@
 ---
-webhook_username: Ansible
-webhook_avatar_url: https://raw.githubusercontent.com/ansible/logos/refs/heads/main/stickers/aap/aap-icon-3x3-rounded.png
+WEBHOOK_USERNAME: Ansible
+WEBHOOK_AVATAR_URL: https://raw.githubusercontent.com/ansible/logos/refs/heads/main/stickers/aap/aap-icon-3x3-rounded.png
 

@@ -13,24 +13,22 @@ Before running the playbooks against a new host, the host needs two things:
 
 ### Initial Admin Account
 
-Set `ansible_user` in `inventory.yml` to the cloud or image-provided admin account for the host. That account must be reachable over SSH and able to run `sudo` during the first configure run.
+Set `remote_user` in `ansible.cfg` to the cloud or image-provided admin account for the host. That account must be reachable over SSH and able to run `sudo` during the first configure run.
 
 The configure playbook then reconciles the longer-term account model:
 
-| Account | Managed by | Purpose |
-| ------- | ---------- | ------- |
-| `ansible_user` | Inventory | Bootstrap and break-glass admin account used by Ansible. |
-| Login user | Bitwarden item referenced by `LOGIN_USER` | Personal interactive SSH account with sudo access. |
-| Login aliases | Bitwarden item referenced by `LOGIN_USER_ALIASES` | Comma-separated SSH usernames that map to the login user UID, home, and shell. |
-| `ansible_managed_group` | Inventory | Shared group for Ansible-owned managed resources; includes `ansible_user` and the login user. |
-| `alloy` | `roles/configure/tasks/accounts.yml` | Non-login service account for Grafana Alloy. |
-| `actions` | `ansible_pull_actions_user` | Restricted automation account that can trigger `ansible-pull` systemd units. |
+| Account       | Managed by                                | Purpose                                                                      |
+| ------------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| `remote_user` | `ansible.cfg`                             | Bootstrap and break-glass admin account used by Ansible.                     |
+| Login user    | Bitwarden item referenced by `LOGIN_USER` | Personal interactive SSH account with sudo access.                           |
+| `alloy`       | `roles/configure/tasks/accounts.yml`      | Non-login service account for Grafana Alloy.                                 |
+| `actions`     | `ANSIBLE_PULL_ACTIONS_USER`               | Restricted automation account that can trigger `ansible-pull` systemd units. |
 
-Compose/CD resources under `/etc/compose` are owned by `ansible_user` and grouped with `ansible_managed_group`, keeping `alloy` and `actions` out of that access path.
+Compose/CD resources under `/etc/compose` are owned by `remote_user` and grouped with `ANSIBLE_MANAGED_GROUP`, keeping `alloy` and `actions` out of that access path.
 
 ### Secrets File
 
-Create the Bitwarden token file at the path configured by `ansible_pull_secrets_file`, currently:
+Create the Bitwarden token file at the path configured by `ANSIBLE_PULL_SECRETS_FILE`, currently:
 
 ```text
 /etc/ansible-pull/bws_access_token
@@ -47,7 +45,7 @@ After configure installs the Ansible Pull wrapper, pull-based runs load `BWS_ACC
 
 ### First Run
 
-Install Ansible, load BW password, and run Ansible pull 
+Install Ansible, load BW password, and run Ansible pull
 
 ```bash
 sudo apt install ansible
@@ -60,11 +58,11 @@ After configure succeeds, the host has the local accounts, SSH access, packages,
 
 ## Playbooks
 
-| File | Trigger | Scope |
-| ---- | ------- | ----- |
-| `playbooks/configure.yml` | Manual first run, then Ansible Pull | Reconciles host configuration: accounts, SSH access, packages, hostname, firewall, CrowdSec bouncer, WARP, DDClient, Grafana Alloy, swap, Docker, and Ansible Pull resources. |
-| `playbooks/deploy.yml` | Ansible Pull | Clones `meyersa/iac-cd` into `/etc/compose`, renders templates, runs baseline Compose reconciliation for each project, and force-recreates impacted services when service files change. |
-| `playbooks/maintain.yml` | Scheduled Ansible Pull | Updates OS packages and cleans system resources, including journal logs, apt cleanup, and Docker pruning. |
+| File                      | Trigger                             | Scope                                                                                                                                                                                   |
+| ------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `playbooks/configure.yml` | Manual first run, then Ansible Pull | Reconciles host configuration: accounts, SSH access, packages, hostname, firewall, CrowdSec bouncer, WARP, DDClient, Grafana Alloy, swap, Docker, and Ansible Pull resources.           |
+| `playbooks/deploy.yml`    | Ansible Pull                        | Clones `meyersa/iac-cd` into `/etc/compose`, renders templates, runs baseline Compose reconciliation for each project, and force-recreates impacted services when service files change. |
+| `playbooks/maintain.yml`  | Scheduled Ansible Pull              | Updates OS packages and cleans system resources, including journal logs, apt cleanup, and Docker pruning.                                                                               |
 
 The utility role contains shared helper tasks such as Discord webhook notifications.
 
@@ -72,11 +70,11 @@ The utility role contains shared helper tasks such as Discord webhook notificati
 
 ### Storage
 
-| Variable | Directory | Description |
-| -------- | --------- | ----------- |
-| `CONFIG_DIR` | `/etc` | Host configuration and rendered Compose resources. |
+| Variable     | Directory  | Description                                                |
+| ------------ | ---------- | ---------------------------------------------------------- |
+| `CONFIG_DIR` | `/etc`     | Host configuration and rendered Compose resources.         |
 | `STATIC_DIR` | `/var/lib` | Local service state, databases, and other host-bound data. |
-| `DATA_DIR` | `/srv` | Service data intended to be served or backed up. |
+| `DATA_DIR`   | `/srv`     | Service data intended to be served or backed up.           |
 
 ### Automation
 
@@ -90,7 +88,7 @@ The utility role contains shared helper tasks such as Discord webhook notificati
 - Secret values are stored in Bitwarden Secrets Manager.
 - Inventory variables store Bitwarden item IDs, not raw secret values.
 - Playbooks read secrets with `bitwarden.secrets.lookup`.
-- The host-local token file is secured at `ansible_pull_secrets_file`.
+- The host-local token file is secured at `ANSIBLE_PULL_SECRETS_FILE`.
 
 ### Backups
 
@@ -188,6 +186,6 @@ To take down an entire Compose project, including named volumes:
 dc monitoring down -v
 ```
 
-## Actions 
+## Actions
 
-On pull requests to main, changes are applied to the Dev server instance and on main. On pull request merges to main, the changes are applied to Prod. This allows for validation of changes before continuing to Prod. 
+On pull requests to main, changes are applied to the Dev server instance and on main. On pull request merges to main, the changes are applied to Prod. This allows for validation of changes before continuing to Prod.

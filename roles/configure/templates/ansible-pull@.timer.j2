@@ -2,8 +2,8 @@
 Description=Scheduled ansible-pull %i
 
 [Timer]
-OnCalendar={{ ansible_pull_maintenance_timer }}
-RandomizedDelaySec={{ ansible_pull_maintenance_randomized_delay_sec }}
+OnCalendar={{ ANSIBLE_PULL_MAINTENANCE_TIMER }}
+RandomizedDelaySec={{ ANSIBLE_PULL_MAINTENANCE_RANDOMIZED_DELAY_SEC }}
 Persistent=true
 Unit=ansible-pull@%i.service
 

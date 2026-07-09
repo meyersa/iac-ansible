@@ -8,10 +8,10 @@
         name: utility
         tasks_from: webhook
       vars:
-        webhook_status: success
-        webhook_title: "Configure started"
-        webhook_description: "Starting configure on {{ inventory_hostname }}"
-        webhook_fields:
+        WEBHOOK_STATUS: success
+        WEBHOOK_TITLE: "Configure started"
+        WEBHOOK_DESCRIPTION: "Starting configure on {{ inventory_hostname }}"
+        WEBHOOK_FIELDS:
           - name: Host
             value: "{{ inventory_hostname }}"
             inline: true
@@ -30,11 +30,11 @@
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: success
-            webhook_title: "Configure finished"
-            webhook_description: "Finished configure on {{ inventory_hostname }}"
-            webhook_color: 3066993
-            webhook_fields:
+            WEBHOOK_STATUS: success
+            WEBHOOK_TITLE: "Configure finished"
+            WEBHOOK_DESCRIPTION: "Finished configure on {{ inventory_hostname }}"
+            WEBHOOK_COLOR: 3066993
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true
@@ -47,10 +47,10 @@
             name: utility
             tasks_from: webhook
           vars:
-            webhook_status: failed
-            webhook_title: "Configure failed"
-            webhook_description: "Configure failed on {{ inventory_hostname }}"
-            webhook_fields:
+            WEBHOOK_STATUS: failed
+            WEBHOOK_TITLE: "Configure failed"
+            WEBHOOK_DESCRIPTION: "Configure failed on {{ inventory_hostname }}"
+            WEBHOOK_FIELDS:
               - name: Host
                 value: "{{ inventory_hostname }}"
                 inline: true
