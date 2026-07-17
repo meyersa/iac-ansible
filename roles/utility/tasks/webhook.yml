@@ -1,17 +1,23 @@
 ---
 - name: Post webhook
   ansible.builtin.uri:
-    url: "https://discord.com/api/webhooks/{{ lookup('bitwarden.secrets.lookup', WEBHOOK_ID_SECRET) }}/{{ lookup('bitwarden.secrets.lookup', WEBHOOK_TOKEN_SECRET) }}"
+    url: >-
+      https://discord.com/api/webhooks/{{
+        lookup('bitwarden.secrets.lookup', WEBHOOK_ID_SECRET)
+      }}/{{
+        lookup('bitwarden.secrets.lookup', WEBHOOK_TOKEN_SECRET)
+      }}?wait=true
     method: POST
     body_format: json
-    status_code: 204
+    return_content: true
+    status_code: 200
     body:
       username: "{{ WEBHOOK_USERNAME }}"
       avatar_url: "{{ WEBHOOK_AVATAR_URL }}"
       embeds:
         - title: "{{ WEBHOOK_TITLE | default(WEBHOOK_DEFAULT_TITLE) }}"
           description: "{{ WEBHOOK_DESCRIPTION | default('') }}"
-          color: "{{ WEBHOOK_COLOR | default(WEBHOOK_DEFAULT_COLOR) }}"
+          color: "{{ WEBHOOK_COLOR | default(WEBHOOK_DEFAULT_COLOR) | int }}"
           fields: "{{ WEBHOOK_FIELDS | default([]) }}"
   vars:
     WEBHOOK_STATUS_EFFECTIVE: "{{ WEBHOOK_STATUS | default('success') }}"
@@ -19,7 +25,6 @@
     WEBHOOK_TOKEN_SECRET: "{{ ERROR_WEBHOOK_TOKEN if WEBHOOK_STATUS_EFFECTIVE == 'failed' else INFO_WEBHOOK_TOKEN }}"
     WEBHOOK_DEFAULT_COLOR: "{{ 15158332 if WEBHOOK_STATUS_EFFECTIVE == 'failed' else 3447003 }}"
     WEBHOOK_DEFAULT_TITLE: "{{ 'Ansible error' if WEBHOOK_STATUS_EFFECTIVE == 'failed' else 'Ansible info' }}"
-  delegate_to: localhost
   become: false
   no_log: true
-  failed_when: false
+
